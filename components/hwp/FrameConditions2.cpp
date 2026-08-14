@@ -96,6 +96,7 @@ void FrameConditions2::parse(heat_pump_data_t& hp_data) {
     hp_data.t03_temperature_outlet = data_->t03_temperature.decode();
     hp_data.t04_temperature_coil = data_->t04_temperature_coil.decode();
     hp_data.t06_temperature_exhaust = data_->t06_temperature_exhaust.decode();
+    hp_data.t_aux_cond2_temperature = data_->temperature_4.decode();
 }
 
 } // namespace hwp

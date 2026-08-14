@@ -118,6 +118,8 @@ class Bus {
      * @return false If the queue is full.
      */
     bool queue_frame_data(std::shared_ptr<BaseFrame> frame);
+    size_t clear_tx_queue();
+    void set_transmit_enabled(bool enabled);
 
     /**
      * @brief Checks if the time since the last controller packet exceeds the allowed delay.
@@ -233,6 +235,7 @@ class Bus {
     std::array<rmt_symbol_word_t, 256> rmt_rx_symbols_{};
     bool rmt_rx_enabled_{false};
     bool rmt_tx_enabled_{false};
+    volatile bool transmit_enabled_{false};
     volatile uint32_t rx_overflow_count_{0};
 #ifdef HWP_PULSE_DEBUG
     std::vector<std::string> pulse_strings_; // Vector to store formatted pulse strings

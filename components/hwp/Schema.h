@@ -1793,6 +1793,10 @@ typedef struct {
     /// exchanger, indicating heat pump output performance.
     optional<float> t06_temperature_exhaust;
 
+    /// @brief Unidentified auxiliary temperature from COND_2 full-frame byte 8.
+    /// The position and encoding are fixture-backed, but its physical sensor role is not yet known.
+    optional<float> t_aux_cond2_temperature;
+
     /// @brief Water flow meter status. If true, the flow meter is enabled and the heat pump can
     /// operate.
     /// @see FlowMeterEnable

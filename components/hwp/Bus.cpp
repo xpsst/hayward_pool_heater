@@ -290,12 +290,35 @@ void IRAM_ATTR Bus::process_pulse(hwp_pulse_symbol_t* item) {
 }
 
 bool Bus::queue_frame_data(std::shared_ptr<BaseFrame> frame) {
+    if (!this->transmit_enabled_) {
+        ESP_LOGW(TAG_BUS, "Transmission disabled; refusing to queue frame");
+        return false;
+    }
     if (frame == nullptr) {
         ESP_LOGE(TAG_BUS, "Cannot queue null frame for transmission");
         return false;
     }
     ESP_LOGD(TAG_BUS, "Queueing frame data for transmission");
-    return tx_packets_queue.enqueue(frame);
+    const bool queued = tx_packets_queue.enqueue(frame);
+    if (!this->transmit_enabled_) {
+        this->clear_tx_queue();
+        ESP_LOGW(TAG_BUS, "Transmission disabled while queueing; discarded frame");
+        return false;
+    }
+    return queued;
+}
+
+size_t Bus::clear_tx_queue() { return this->tx_packets_queue.clear(); }
+
+void Bus::set_transmit_enabled(bool enabled) {
+    this->transmit_enabled_ = enabled;
+    if (!enabled) {
+        const size_t removed = this->clear_tx_queue();
+        if (removed > 0) {
+            ESP_LOGW(TAG_BUS, "Transmission disabled; discarded %u queued frame(s)",
+                static_cast<unsigned>(removed));
+        }
+    }
 }
 void Bus::start_receive() {
     this->current_frame.reset();
@@ -385,6 +408,10 @@ bool Bus::transmit_frame(BaseFrame& packet) {
 #ifdef HWP_NATIVE_TEST
     return false;
 #else
+    if (!this->transmit_enabled_) {
+        ESP_LOGW(TAG_BUS, "Transmission disabled; dropping pending frame");
+        return false;
+    }
     if (this->rmt_tx_channel_ == nullptr || this->rmt_copy_encoder_ == nullptr) {
         ESP_LOGE(TAG_BUS, "RMT TX channel is not ready");
         return false;
@@ -409,6 +436,10 @@ bool Bus::transmit_frame(BaseFrame& packet) {
     }
     symbols.push_back(make_rmt_symbol_ms(bit_low_duration_ms, controler_group_spacing_ms));
 
+    if (!this->transmit_enabled_) {
+        ESP_LOGW(TAG_BUS, "Transmission disabled before RMT start; dropping frame");
+        return false;
+    }
     this->stop_receive();
     esp_err_t err = rmt_transmit(this->rmt_tx_channel_, this->rmt_copy_encoder_, symbols.data(),
         symbols.size() * sizeof(rmt_symbol_word_t), &this->rmt_transmit_config_);
@@ -430,6 +461,10 @@ bool Bus::transmit_frame(BaseFrame& packet) {
 void Bus::process_send_queue() {
     std::shared_ptr<BaseFrame> packet;
 
+    if (!this->transmit_enabled_) {
+        this->clear_tx_queue();
+        return;
+    }
     if (!this->tx_packets_queue.has_next()) return;
     this->tx_packets_queue.logging_enabled = true;
     if (this->current_frame.is_started()) {
@@ -447,6 +482,10 @@ void Bus::process_send_queue() {
     }
     ESP_LOGI(TAG_BUS, "Retrieving packet from queue");
     if (this->tx_packets_queue.try_dequeue(&packet)) {
+        if (!this->transmit_enabled_) {
+            ESP_LOGW(TAG_BUS, "Transmission disabled; dropping dequeued frame");
+            return;
+        }
         ESP_LOGI(TAG_BUS, "Packet received, type: %s", packet->type_string());
         this->mode = BUSMODE_TX;
         ESP_LOGD(TAG_BUS, "Resetting existing packet (if any)");
@@ -457,6 +496,12 @@ void Bus::process_send_queue() {
             this->web_dashboard_->record_packet(*packet, "SEND");
         }
         if (!this->transmit_frame(*packet)) {
+            if (!this->transmit_enabled_) {
+                this->current_frame.reset("TX disabled");
+                this->reset_pulse_log();
+                this->mode = BUSMODE_RX;
+                return;
+            }
             this->mode = BUSMODE_ERROR;
             return;
         }

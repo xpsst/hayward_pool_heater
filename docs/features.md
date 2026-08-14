@@ -40,6 +40,7 @@ The tmp merge track is closed. The current hardware-test focus has moved from re
 | TEST-070 | QEMU target test feasibility | Planned | Document install needs and prove one minimal ESP-IDF/ESP32 QEMU test app can run | Devcontainer has Debian `qemu-system-xtensa`, but not ESP-IDF or an ESP32 QEMU machine yet |
 | TEST-080 | ESPHome host-platform feasibility | Blocked | Host compile/run path exists or blocker is documented | Current component is ESP32/RMT-bound |
 | TEST-090 | Manual hardware-in-the-loop procedures | Done | Passive and active-control validation procedures are documented | See `docs/testing/manual-hil.md`; not default CI |
+| TEST-091 | XPS-100 target and inlet RX validation | Done | Physical PC1001 target and inlet/current water temperature agree with Home Assistant | Target changes down to 20 C and XPS T02 are hardware-confirmed; remaining sensor identities require separate evidence |
 
 ## Environment And Tooling
 
@@ -71,6 +72,7 @@ The tmp merge track is closed. The current hardware-test focus has moved from re
 | CPP-100 | Fan field command parity | Done | Known fan config changes have expected command-frame bytes documented in tests | Restores tmp fan control surface for F02-F13; native byte helpers assert F10/F11/F12/F13 and representative F02/F08 packet mutations |
 | CPP-110 | Final tmp closure | Done | Remaining tmp-only items are documented as merged, deferred, or rejected | `tmp/hwp` is archival reference only, not an active merge source |
 | CPP-120 | Hardware startup diagnostics | Done | HWP boots with bus startup enabled, and startup ordering avoids null data-model access | `start_bus_on_setup` remains available as a diagnostic config knob |
+| CPP-130 | XPS helper publication and passive TX guard | Done | Existing helpers publish by default while every reboot starts read-only and pending frames are discarded when active mode is disabled | Adds standalone T02 and diagnostic COND_2 auxiliary sensors; active writes remain supervised-only |
 
 ## Protocol And Safety
 

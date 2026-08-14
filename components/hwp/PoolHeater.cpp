@@ -150,6 +150,8 @@ void PoolHeater::update() {
     // temperatures
     ESP_LOGVV(POOL_HEATER_TAG, "Setting suction temperature");
     publish_sensor_value(this->hp_data_.t01_temperature_suction, this->t01_temperature_suction_);
+    ESP_LOGVV(POOL_HEATER_TAG, "Setting inlet temperature");
+    publish_sensor_value(this->hp_data_.t02_temperature_inlet, this->t02_temperature_inlet_);
     ESP_LOGVV(POOL_HEATER_TAG, "Setting outlet temperature");
     publish_sensor_value(this->hp_data_.t03_temperature_outlet, this->t03_temperature_outlet_);
     ESP_LOGVV(POOL_HEATER_TAG, "Setting coil temperature");
@@ -161,6 +163,9 @@ void PoolHeater::update() {
 
     ESP_LOGVV(POOL_HEATER_TAG, "Setting exhaust temperature");
     publish_sensor_value(this->hp_data_.t06_temperature_exhaust, this->t06_temperature_exhaust_);
+    ESP_LOGVV(POOL_HEATER_TAG, "Setting auxiliary COND_2 temperature");
+    publish_sensor_value(
+        this->hp_data_.t_aux_cond2_temperature, this->t_aux_cond2_temperature_);
     // defrost config
     ESP_LOGVV(POOL_HEATER_TAG, "Setting defrost start");
     publish_sensor_value(this->hp_data_.d01_defrost_start, this->d01_defrost_start_);
@@ -297,7 +302,6 @@ void PoolHeater::dump_config() {
     this->driver_.dump_known_packets(POOL_HEATER_TAG);
 }
 void PoolHeater::control(const HWPCall& hwpcall) {
-    auto ctrl_frames = this->driver_.control(hwpcall);
     if (this->passive_mode_) {
         ESP_LOGW(POOL_HEATER_TAG, "Passive mode. Ignoring inbound changes");
         this->status_momentary_warning("Passive mode. Ignoring changes", 5000);
@@ -305,6 +309,7 @@ void PoolHeater::control(const HWPCall& hwpcall) {
         return;
     }
 
+    auto ctrl_frames = this->driver_.control(hwpcall);
     bool success = true;
     for (size_t i = 0; i < ctrl_frames.size(); i++) {
         ctrl_frames[i]->print("QUEUE", POOL_HEATER_TAG, ESPHOME_LOG_LEVEL_VERBOSE, __LINE__);
@@ -334,6 +339,7 @@ void PoolHeater::set_actual_status(const std::string status, bool force) {
 }
 
 void PoolHeater::set_passive_mode(bool passive) {
+    this->driver_.set_transmit_enabled(!passive);
     if (this->passive_mode_ == passive) return;
     this->passive_mode_ = passive;
     this->publish_state();

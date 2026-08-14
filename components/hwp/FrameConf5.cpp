@@ -80,8 +80,19 @@ std::string FrameConf5::format(const conf_5_t& val, const conf_5_t& ref) const {
     return cs.str();
 }
 optional<std::shared_ptr<BaseFrame>> FrameConf5::control(const HWPCall& call) {
+    const bool has_request = call.d06_defrost_eco_mode.has_value() ||
+                             call.u01_flow_meter.has_value() ||
+                             call.d05_min_economy_defrost_time_minutes.has_value() ||
+                             call.u02_pulses_per_liter.has_value() ||
+                             call.f11_speed_control_module.has_value();
+    if (!has_request) return nullopt;
+
+    if (!this->data_.has_value()) {
+        ESP_LOGW(TAG, "FrameConfA: cannot publish changes yet. waiting for first packet");
+        call.component.status_momentary_warning("No data available", 5000);
+        return nullopt;
+    }
     FrameConf5 command_frame(*this);
-    bool has_data = this->data_.has_value();
     if (call.d06_defrost_eco_mode.has_value()) {
         command_frame.data().flags_a.set_eco_mode(call.d06_defrost_eco_mode.value());
     }
@@ -100,14 +111,8 @@ optional<std::shared_ptr<BaseFrame>> FrameConf5::control(const HWPCall& call) {
         command_frame.data().flags_a.set_f11_speed_control_module(
             call.f11_speed_control_module.value());
     }
-    if(!command_frame.is_changed() && has_data)  {
+    if(!command_frame.is_changed())  {
         ESP_LOGD(TAG, "No changes for frame ConfA");
-        return nullopt;
-    }
-
-    if (!has_data) {
-        ESP_LOGW(TAG, "FrameConfA: cannot publish changes yet. waiting for first packet");
-        call.component.status_momentary_warning("No data available", 5000);
         return nullopt;
     }
     command_frame.finalize();

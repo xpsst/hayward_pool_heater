@@ -82,8 +82,22 @@ std::string FrameConf2::format(const conf_2_t& val, const conf_2_t& ref) const {
 }
 void FrameConf2::set_fan_mode(FanMode mode) { data_->fan_mode.mode = mode.to_raw(); }
 optional<std::shared_ptr<BaseFrame>> FrameConf2::control(const HWPCall& call) {
+    optional<FanMode> fan_mode = FanMode::from_call(call);
+    const bool has_request = call.d01_defrost_start.has_value() ||
+                             call.d02_defrost_end.has_value() ||
+                             call.d03_defrosting_cycle_time_minutes.has_value() ||
+                             call.d04_max_defrost_time_minutes.has_value() ||
+                             fan_mode.has_value() ||
+                             call.f10_fan_speed_control_temp.has_value() ||
+                             call.f13_max_fan_voltage_pct.has_value();
+    if (!has_request) return nullopt;
+
+    if (!this->data_.has_value()) {
+        ESP_LOGW(TAG, "Cannot control yet. Waiting for first heater fan mode packet");
+        call.component.status_momentary_warning("Waiting for initial heater fan mode packet", 5000);
+        return nullopt;
+    }
     FrameConf2 fan_mode_frame(*this);
-    bool has_data = this->data_.has_value();
     if (call.d01_defrost_start.has_value()) {
         ESP_LOGD(TAG, "control: setting d01-defrost-start to %.1f", call.d01_defrost_start.value());
         fan_mode_frame.data().d01_defrost_start = call.d01_defrost_start.value();
@@ -107,7 +121,6 @@ optional<std::shared_ptr<BaseFrame>> FrameConf2::control(const HWPCall& call) {
         fan_mode_frame.data().d04_max_defrost_time_minutes =
             call.d04_max_defrost_time_minutes.value();
     }
-    optional<FanMode> fan_mode = FanMode::from_call(call);
     if (fan_mode.has_value()) {
         ESP_LOGD(TAG, "control: setting fan mode to %s", fan_mode->to_string());
         fan_mode_frame.set_fan_mode(fan_mode.value());
@@ -124,13 +137,8 @@ optional<std::shared_ptr<BaseFrame>> FrameConf2::control(const HWPCall& call) {
         fan_mode_frame.data().f13_max_fan_voltage_pct = *call.f13_max_fan_voltage_pct;
     }
 
-    if (!fan_mode_frame.is_changed() && has_data) {
+    if (!fan_mode_frame.is_changed()) {
         ESP_LOGD(TAG, "control: no changes to fan mode");
-        return nullopt;
-    }
-    if (!has_data) {
-        ESP_LOGW(TAG, "Cannot control yet. Waiting for first heater fan mode packet");
-        call.component.status_momentary_warning("Waiting for initial heater fan mode packet", 5000);
         return nullopt;
     }
     fan_mode_frame.finalize();
@@ -153,10 +161,8 @@ void FrameConf2::traits(climate::ClimateTraits& traits, heat_pump_data_t& hp_dat
  */
 void FrameConf2::parse(heat_pump_data_t& hp_data) {
     hp_data.d01_defrost_start = data_->d01_defrost_start.decode();
-    hp_data.d01_defrost_start = data_->d01_defrost_start.decode();
     hp_data.d03_defrosting_cycle_time_minutes = data_->d03_defrosting_cycle_time_minutes.decode();
     hp_data.d04_max_defrost_time_minutes = data_->d04_max_defrost_time_minutes.decode();
-    hp_data.d02_defrost_end = data_->d02_defrost_end.decode();
     hp_data.d02_defrost_end = data_->d02_defrost_end.decode();
     hp_data.fan_mode = make_optional(data_->fan_mode.get_fan_mode());
     hp_data.f10_fan_speed_control_temp =

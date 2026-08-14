@@ -183,6 +183,14 @@ class ClimateSchemaTest(unittest.TestCase):
         )
         self.assertEqual(config["active_mode_switch"]["name"], "Active Mode")
         self.assertEqual(config["update_sensors_switch"]["name"], "Update Sensors")
+        self.assertEqual(
+            config["active_mode_switch"]["restore_mode"], "ALWAYS_OFF"
+        )
+        self.assertEqual(
+            config["update_sensors_switch"]["restore_mode"], "ALWAYS_ON"
+        )
+        self.assertIn("inlet_temperature_T02", config["sensors"])
+        self.assertIn("auxiliary_temperature_cond2", config["sensors"])
         self.assertEqual(config["generate_code"]["name"], "Generate Code")
 
     def test_explicit_optional_helper_entities_validate(self):

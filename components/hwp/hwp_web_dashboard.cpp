@@ -288,6 +288,7 @@ void HWPWebDashboard::update_fields(
     append_field(fields, make_float_field("t03_outlet", "T03 Outlet", data.t03_temperature_outlet, "C", "temperatures", "COND_2", "D2[3]", "heater"));
     append_field(fields, make_float_field("t04_coil", "T04 Coil", data.t04_temperature_coil, "C", "temperatures", "COND_2", "D2[5]", "heater"));
     append_field(fields, make_float_field("t06_exhaust", "T06 Exhaust", data.t06_temperature_exhaust, "C", "temperatures", "COND_2", "D2[4]", "heater"));
+    append_field(fields, make_float_field("t_aux_cond2", "COND_2 Auxiliary", data.t_aux_cond2_temperature, "C", "temperatures", "COND_2", "D2[7]", "heater"));
     append_field(fields, make_float_field("r01_setpoint_cooling", "R01 Cooling Setpoint", data.r01_setpoint_cooling, "C", "setpoints", "CONFIG_1", "81[3]", "heater"));
     append_field(fields, make_float_field("r02_setpoint_heating", "R02 Heating Setpoint", data.r02_setpoint_heating, "C", "setpoints", "CONFIG_1", "81[4]", "heater"));
     append_field(fields, make_float_field("r03_setpoint_auto", "R03 Auto Setpoint", data.r03_setpoint_auto, "C", "setpoints", "CONFIG_1", "81[5]", "heater"));

@@ -76,10 +76,20 @@ climate:
 - The CONFIG_5 write/echo evidence is tracked as `tests/fixtures/active_tx/hwp_active_tx_config5_defrost_2026_05_12.json`. It records the accepted ECO/NORMAL commands, heater echoes, valid checksums, D06 byte-2 bit-6 transitions, and observed heater normalization of byte 4.
 - `climate.py` includes the built-in `esp_driver_rmt` IDF component during codegen; the default normal and pulse-debug compile fixtures now target `framework: type: esp-idf`.
 - For Home Assistant hardware testing from a moving branch, use `refresh: 0s` under `external_components` or pin to a commit SHA. Otherwise ESPHome can reuse its cached external component source even when the repo branch changed.
-- The XPS-100/PC1001 RX-only variant decodes its heating target from short
+- The XPS-100/PC1001 passive variant decodes its heating target from short
   `COND_2_B` byte 2 when the observed `1F ?? 2D 07 0D A0 ...` signature is
-  present. Generic short-D2 behavior remains unchanged; live XPS target and T02
-  confirmation follows the passive procedure in `docs/testing/manual-hil.md`.
+  present. Generic short-D2 behavior remains unchanged. Live hardware confirms
+  that physical target changes down to 20 C reach Home Assistant and that the
+  XPS extended D1/D1B T02 value matches the inlet/current water temperature.
+- Revision `2026.05.15.11-xps100-sensors` exposes T02 as a standalone inlet
+  sensor and the fixture-backed but physically unidentified COND_2 byte-8 value
+  as a diagnostic auxiliary sensor. Existing helper sensors now publish after
+  startup because **Update Sensors** defaults on.
+- Active control remains opt-in. **Active Mode** always starts off, passive
+  climate calls are rejected before frame generation, disabling active mode
+  clears pending TX frames, and each config control waits only for its own
+  matching heater state packet. Follow the one-setting-at-a-time procedure in
+  `docs/testing/manual-hil.md` before making XPS active-control claims.
 - Current Windows verification uses ESPHome `2026.7.4`, which selected ESP-IDF
   `5.5.5`. The normal and pulse-debug fixtures both compile successfully.
 

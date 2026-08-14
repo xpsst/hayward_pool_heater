@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 
 CODEOWNERS = ["@sle118"]
-COMPONENT_VERSION = "2026.05.15.10-xps100-rx"
+COMPONENT_VERSION = "2026.05.15.11-xps100-sensors"
 
 AUTO_LOAD = [
     "climate",
@@ -117,10 +117,12 @@ def validate_web_ui_path(value):
 
 CONF_GPIO_NETPIN = "pin_txrx"
 CONF_TEMPERATURE_SUCTION = "suction_temperature_T01"
+CONF_TEMPERATURE_INLET = "inlet_temperature_T02"
 CONF_TEMPERATURE_OUTLET = "outlet_temperature_T03"
 CONF_TEMPERATURE_COIL = "coil_temperature_T04"
 CONF_TEMPERATURE_AMBIENT = "ambient_temperature_T05"
 CONF_TEMPERATURE_EXHAUST = "exhaust_temperature_T06"
+CONF_TEMPERATURE_AUX_COND2 = "auxiliary_temperature_cond2"
 CONF_ACTUAL_STATUS = "actual_status"
 CONF_HEATER_STATUS_CODE = "heater_status_code"
 CONF_HEATER_STATUS_DESCRIPTION = "heater_status_description"
@@ -246,7 +248,7 @@ BASE_SCHEMA = climate.climate_schema(PoolHeater).extend(
         ): switch.switch_schema(
             ActiveModeSwitch,
             entity_category=ENTITY_CATEGORY_CONFIG,
-            default_restore_mode="RESTORE_DEFAULT_OFF",
+            default_restore_mode="ALWAYS_OFF",
             icon="mdi:upload-network",
         ),
         cv.Optional(
@@ -254,8 +256,8 @@ BASE_SCHEMA = climate.climate_schema(PoolHeater).extend(
         ): switch.switch_schema(
             UpdateStatusSwitch,
             entity_category=ENTITY_CATEGORY_CONFIG,
-            default_restore_mode="RESTORE_DEFAULT_OFF",
-            icon="mdi:upload-network",
+            default_restore_mode="ALWAYS_ON",
+            icon="mdi:refresh",
         ),
         cv.Optional(
             CONF_GENERATE_CODE_BUTTON, default={"name": "Generate Code"}
@@ -629,6 +631,18 @@ SENSORS = dict[str, tuple[str, cv.Schema, callable]](
             sensor.register_sensor,
             create_throttle_avg_filter,
         ),
+        CONF_TEMPERATURE_INLET: (
+            "Inlet Temperature",
+            sensor.sensor_schema(
+                unit_of_measurement=UNIT_CELSIUS,
+                device_class=DEVICE_CLASS_TEMPERATURE,
+                state_class=STATE_CLASS_MEASUREMENT,
+                accuracy_decimals=1,
+                icon="mdi:coolant-temperature",
+            ),
+            sensor.register_sensor,
+            create_throttle_avg_filter,
+        ),
         CONF_R08_MIN_COOL_SETPOINT: (
             "Min Cool Setpoint",
             sensor.sensor_schema(
@@ -721,6 +735,19 @@ SENSORS = dict[str, tuple[str, cv.Schema, callable]](
                 state_class=STATE_CLASS_MEASUREMENT,
                 accuracy_decimals=1,
                 icon="mdi:smoke-detector",
+            ),
+            sensor.register_sensor,
+            create_throttle_avg_filter,
+        ),
+        CONF_TEMPERATURE_AUX_COND2: (
+            "Auxiliary COND 2 Temperature",
+            sensor.sensor_schema(
+                unit_of_measurement=UNIT_CELSIUS,
+                device_class=DEVICE_CLASS_TEMPERATURE,
+                state_class=STATE_CLASS_MEASUREMENT,
+                accuracy_decimals=1,
+                icon="mdi:thermometer-lines",
+                entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
             ),
             sensor.register_sensor,
             create_throttle_avg_filter,

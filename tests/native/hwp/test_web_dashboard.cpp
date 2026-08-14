@@ -89,6 +89,7 @@ void test_field_snapshot_and_graph_trim() {
 
     data.t02_temperature_inlet = 12.5f;
     data.t04_temperature_coil = 4.0f;
+    data.t_aux_cond2_temperature = 20.0f;
     dashboard.update_fields(data, "Connected", hwp::BUSMODE_RX);
     const auto first_json = dashboard.state_json();
     data.t02_temperature_inlet = 13.0f;
@@ -100,6 +101,8 @@ void test_field_snapshot_and_graph_trim() {
     assert(dashboard.graph_point_count("t02_inlet") == 2);
     const auto json = dashboard.state_json();
     assert_contains(json, "\"label\":\"T02 Inlet\"");
+    assert_contains(json, "\"id\":\"t_aux_cond2\"");
+    assert_contains(json, "\"label\":\"COND_2 Auxiliary\"");
     assert_contains(json, "\"value\":\"13.5\"");
     assert_contains(json, "\"changed\":true");
     assert_contains(json, "\"bus_mode\":\"RX\"");

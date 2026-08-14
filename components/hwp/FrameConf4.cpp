@@ -117,8 +117,22 @@ void FrameConf4::parse(heat_pump_data_t& hp_data) {
         data_->f09_fan_stop_low_speed_running_time.decode();
 }
 optional<std::shared_ptr<BaseFrame>> FrameConf4::control(const HWPCall& call) {
+    const bool has_request = call.f02_fan_high_speed_cool_setpoint.has_value() ||
+                             call.f03_fan_low_speed_temp_in_cooling_set_point.has_value() ||
+                             call.f04_fan_stop_temp_in_cooling_set_point.has_value() ||
+                             call.f05_fan_high_speed_temp_in_heating_set_point.has_value() ||
+                             call.f06_fan_low_speed_temp_in_heating_set_point.has_value() ||
+                             call.f07_fan_stop_temp_in_heating_set_point.has_value() ||
+                             call.f08_fan_low_speed_running_time.has_value() ||
+                             call.f09_fan_stop_low_speed_running_time.has_value();
+    if (!has_request) return nullopt;
+
+    if (!this->data_.has_value()) {
+        ESP_LOGW(TAG, "Cannot control yet. Waiting for first FrameConf4 packet");
+        call.component.status_momentary_warning("Waiting for first FrameConf4 packet", 5000);
+        return nullopt;
+    }
     FrameConf4 fan_speed_control_frame(*this);
-    bool has_data = this->data_.has_value();
 
     if (call.f02_fan_high_speed_cool_setpoint.has_value()) {
         ESP_LOGI(TAG, "FrameConf4 control: request for fan high speed cool setpoint %.1f",
@@ -168,13 +182,8 @@ optional<std::shared_ptr<BaseFrame>> FrameConf4::control(const HWPCall& call) {
         fan_speed_control_frame.data().f09_fan_stop_low_speed_running_time =
             *call.f09_fan_stop_low_speed_running_time;
     }
-    if (!fan_speed_control_frame.is_changed() && has_data) {
+    if (!fan_speed_control_frame.is_changed()) {
         ESP_LOGV(TAG, "control: no changes to fan speed control");
-        return nullopt;
-    }
-    if (!has_data) {
-        ESP_LOGW(TAG, "Cannot control yet. Waiting for first FrameConf4 packet");
-        call.component.status_momentary_warning("Waiting for first FrameConf4 packet", 5000);
         return nullopt;
     }
     fan_speed_control_frame.finalize();

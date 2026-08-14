@@ -394,13 +394,15 @@ void test_condition_parse_matches_protocol_core() {
         assert(data.t03_temperature_outlet.has_value());
         assert(data.t04_temperature_coil.has_value());
         assert(data.t06_temperature_exhaust.has_value());
+        assert(data.t_aux_cond2_temperature.has_value());
         assert_float_eq(data.t03_temperature_outlet.value(),
                         protocol::read_cond2_temperature(cond2.data(), cond2.size(), 3).value());
         assert_float_eq(data.t04_temperature_coil.value(),
                         protocol::read_cond2_temperature(cond2.data(), cond2.size(), 4).value());
         assert_float_eq(data.t06_temperature_exhaust.value(),
                         protocol::read_cond2_temperature(cond2.data(), cond2.size(), 6).value());
-        assert(protocol::read_cond2_temperature(cond2.data(), cond2.size(), 8).has_value());
+        assert_float_eq(data.t_aux_cond2_temperature.value(),
+                        protocol::read_cond2_temperature(cond2.data(), cond2.size(), 8).value());
     }
 
     {
@@ -412,6 +414,7 @@ void test_condition_parse_matches_protocol_core() {
         assert(data.t03_temperature_outlet.has_value());
         assert(data.t04_temperature_coil.has_value());
         assert(data.t06_temperature_exhaust.has_value());
+        assert(data.t_aux_cond2_temperature.has_value());
         assert_float_eq(data.t03_temperature_outlet.value(),
                         protocol::read_cond2_temperature(
                             temp_out_1.data(), temp_out_1.size(), 3).value());
@@ -421,8 +424,10 @@ void test_condition_parse_matches_protocol_core() {
         assert_float_eq(data.t06_temperature_exhaust.value(),
                         protocol::read_cond2_temperature(
                             temp_out_1.data(), temp_out_1.size(), 6).value());
-        assert_float_eq(protocol::read_cond2_temperature(
-                            temp_out_1.data(), temp_out_1.size(), 8).value(), 20.0f);
+        assert_float_eq(data.t_aux_cond2_temperature.value(),
+                        protocol::read_cond2_temperature(
+                            temp_out_1.data(), temp_out_1.size(), 8).value());
+        assert_float_eq(data.t_aux_cond2_temperature.value(), 20.0f);
     }
 
     {

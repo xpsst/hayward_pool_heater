@@ -90,7 +90,8 @@ controller command packet, simulator command example, or live heater echo.
 
 | Menu | Field | Meaning | Frame | Location | Encoding | Status |
 |----|----|----|----|----|----|----|
-| R02 | `r02_setpoint_heating` | Heating setpoint fallback | `0xD2` / `COND_2_B` short packet with payload signature `1F ?? 2D 07 0D A0 ...` | byte 2 | direct Celsius byte | read-only, hardware-observed |
+| R02 | `r02_setpoint_heating` | Heating setpoint fallback | `0xD2` / `COND_2_B` short packet with payload signature `1F ?? 2D 07 0D A0 ...` | byte 2 | direct Celsius byte | read-only, hardware-confirmed |
+| T02 | `t02_temperature_inlet` | Inlet/current water temperature | `0xD1` / `COND_1` or `COND_1_B`, after XPS signature detection | byte 9 | extended half-degree temperature | read-only, hardware-confirmed |
 
 ## Workflow
 

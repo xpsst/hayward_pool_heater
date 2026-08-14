@@ -15,7 +15,7 @@ Compile, schema, fixture, and native byte tests are necessary but not sufficient
 ### XPS-100 / PC1001 RX Validation
 
 Keep **Active Mode** off for this entire check. After flashing revision
-`2026.05.15.10-xps100-rx`, confirm the setup log reports that exact revision and
+`2026.05.15.11-xps100-sensors`, confirm the setup log reports that exact revision and
 `Registered frame decoders: 12` before checking received values.
 Change only the physical PC1001 target from 30 to 31 to 32 C and wait at least
 one climate update interval after each change. The log should report
@@ -26,8 +26,27 @@ For the current temperature, record the first
 `XPS100 debug: D1 inlet` or `XPS100 debug: D1B inlet` line. Its raw byte is full
 D1 packet byte 9. After the short-D2 XPS signature is detected, this byte uses
 extended half-degree encoding; the captured `0x83` candidate decodes to 35.5 C.
-Compare it with the PC1001 water/inlet display before claiming the XPS-100 T02
-mapping as hardware-verified.
+The XPS-100/PC1001 field test confirmed that physical target changes, including
+20 C, reach Home Assistant after a few seconds and that the decoded T02 value
+matches the displayed current/inlet water temperature.
+
+### XPS-100 Sensor Check
+
+After every reboot, first confirm **Active Mode** is off and **Update Sensors**
+is on. Keep the bus passive during this check and wait at least one minute for
+filtered helper values to publish.
+
+1. Compare the climate current temperature with **Inlet Temperature**; both are
+   sourced from T02 and should agree.
+2. Compare the climate target with **Heating Setpoint**; the short XPS D2 frame
+   is the authoritative passive fallback when CONFIG_1 is absent or delayed.
+3. Check **Water Flow**, heater status, R08-R11 limits, defrost values, and fan
+   values. A value may remain unavailable when the matching frame is not sent
+   by this controller; do not invent a fallback from an unrelated byte.
+4. Treat **Auxiliary COND 2 Temperature** as diagnostic only. Its byte position
+   and decoding are fixture-backed, but its physical sensor identity is not.
+5. Record short `DD` frames alongside the PC1001 T01-T06 service-menu values
+   before assigning names to any of their bytes.
 
 ## Active-Control Smoke Test
 
@@ -49,6 +68,11 @@ Procedure:
 4. Confirm the heater echoes the expected value and no unrelated fields changed.
 5. Disable active mode after the observation window.
 
+For the first XPS-100 active test, change only the climate target by 1 C. Verify
+the queued CONFIG_1/R02 command, the physical PC1001 value, and the next
+heater-originated target frame, then switch **Active Mode** off immediately.
+Do not start with defrost, flow-meter, fan voltage, or fan timing controls.
+
 Stop criteria:
 
 - Unexpected command bytes are logged.
@@ -59,6 +83,7 @@ Stop criteria:
 ## Observed Hardware Results
 
 - ESP-IDF 5 RMT passive RX is field-stable on the hardware-test branch after moving RMT callback work out of ISR context. The component boots with bus startup enabled, decodes live heater frames, and continues publishing climate state.
+- XPS-100/PC1001 passive RX is hardware-confirmed for the physical target and inlet/current water temperature. Target changes down to 20 C appear in Home Assistant after the next received update.
 - CONFIG_5 defrost eco mode has passed a supervised active TX smoke test in both directions. The heater echoed `d06 defrost: ECO` after the ECO command and later echoed `d06 defrost: NORMAL` after the NORMAL command.
 - TX/RX recovery remained stable after those writes. The duplicate RX re-arm warning `Failed to arm RMT RX: 259` was resolved by avoiding a second receive arm after transmit.
 - Hardware echo showed the heater may normalize adjacent CONFIG_5 bytes while accepting the defrost mode change. Treat byte preservation around D05/U02-adjacent fields as protocol evidence to capture before broadening active-control claims.

@@ -58,16 +58,29 @@ void FrameConf1::reset() {
 }
 
 optional<std::shared_ptr<BaseFrame>> FrameConf1::control(const HWPCall& call) {
+    const bool has_request = call.get_mode().has_value() ||
+                             call.get_target_temperature().has_value() ||
+                             call.h02_mode_restrictions.has_value() ||
+                             call.r04_return_diff_cooling.has_value() ||
+                             call.r05_shutdown_temp_diff_when_cooling.has_value() ||
+                             call.r06_return_diff_heating.has_value() ||
+                             call.r07_shutdown_diff_heating.has_value() ||
+                             call.f12_min_fan_voltage_pct.has_value();
+    if (!has_request) return nullopt;
 
-    // ESP_LOGD(TAG, "Base command : ");
+    if (!this->data_.has_value()) {
+        ESP_LOGW(TAG, "Cannot control yet. Waiting for first heater state packet");
+        call.component.status_momentary_warning("Waiting for initial heater state", 5000);
+        return nullopt;
+    }
+
     FrameConf1 command_frame(*this);
-    auto has_value = this->data_.has_value();
 
     if (call.get_mode().has_value()) {
-        call.hp_data.mode = *call.get_mode();
+        const auto requested_mode = *call.get_mode();
         ESP_LOGI(TAG, "FrameConf1 control: request for mode %s",
-            LOG_STR_ARG(climate_mode_to_string(*call.hp_data.mode)));
-        command_frame.set_mode(*call.hp_data.mode);
+            LOG_STR_ARG(climate_mode_to_string(requested_mode)));
+        command_frame.set_mode(requested_mode);
     }
     if(call.h02_mode_restrictions.has_value()) {
         ESP_LOGI(TAG, "FrameConf1 control: request for mode restrictions %s",
@@ -75,57 +88,54 @@ optional<std::shared_ptr<BaseFrame>> FrameConf1::control(const HWPCall& call) {
         command_frame.data().mode.set_mode_restriction(call.h02_mode_restrictions.value());
     }
     if (call.get_target_temperature().has_value()) {
+        const float requested_temperature = call.get_target_temperature().value();
         ESP_LOGI(TAG, "FrameConf1 control: request for target temperature %.1f",
-            call.get_target_temperature().value());
-        if (!call.hp_data.is_temperature_valid(call.get_target_temperature().value())) {
+            requested_temperature);
+        if (!call.hp_data.is_temperature_valid(requested_temperature)) {
             char error_msg[101] = {};
             sprintf(error_msg, "Invalid temperature %.1f. Must be between %.1fC and %.1fC.",
-                call.get_target_temperature().value(), call.hp_data.get_min_target(),
+                requested_temperature, call.hp_data.get_min_target(),
                 call.hp_data.get_max_target());
             ESP_LOGE(TAG, "Error setTemp:  %s", error_msg);
+            call.component.status_momentary_warning(error_msg, 5000);
         } else {
-            call.hp_data.target_temperature = *call.get_target_temperature();
-        }
-
-        switch (command_frame.get_active_mode()) {
-        case STATE_COOLING_MODE:
-            ESP_LOGD(TAG,
-                "FrameConf1 control: request for cooling temperature %.1f, changing from "
-                "%.1f",
-                call.hp_data.target_temperature.value(),
-                command_frame.data().r01_setpoint_cooling.decode());
-            command_frame.set_target_cooling(*call.hp_data.target_temperature);
-            break;
-        case STATE_HEATING_MODE:
-            command_frame.set_target_heating(*call.hp_data.target_temperature);
-            ESP_LOGD(TAG,
-                "FrameConf1 control: request for heating temperature %.1f, changing from "
-                "%.1f",
-                call.hp_data.target_temperature.value(),
-                command_frame.data().r02_setpoint_heating.decode());
-            break;
-        case STATE_AUTO_MODE:
-            ESP_LOGD(TAG,
-                "FrameConf1 control: request for auto temperature %.1f, changing from %.1f",
-                call.hp_data.target_temperature.value(),
-                command_frame.data().r03_setpoint_auto.decode());
-            command_frame.set_target_auto(*call.hp_data.target_temperature);
-            break;
-        case STATE_OFF: {
-            ESP_LOGD(TAG, "FrameConf1 control: request for temperature %.1f while off",
-                call.hp_data.target_temperature.value());
-            auto restrictions = command_frame.data().mode.get_mode_restriction();
-            if (restrictions == HeatPumpRestrict::Cooling) {
-                ESP_LOGW(TAG, "Heater is off, restricted to cooling. Setting cooling target");
-                command_frame.set_target_cooling(*call.hp_data.target_temperature);
-            } else if (restrictions == HeatPumpRestrict::Heating) {
-                ESP_LOGW(TAG, "Heater is off, restricted to heating. Setting heating target");
-                command_frame.set_target_heating(*call.hp_data.target_temperature);
-            } else {
-                ESP_LOGW(TAG, "Heater is off, unknown mode for setpoint. Setting heating target");
-                command_frame.set_target_heating(*call.hp_data.target_temperature);
+            switch (command_frame.get_active_mode()) {
+            case STATE_COOLING_MODE:
+                ESP_LOGD(TAG,
+                    "FrameConf1 control: request for cooling temperature %.1f, changing from "
+                    "%.1f",
+                    requested_temperature, command_frame.data().r01_setpoint_cooling.decode());
+                command_frame.set_target_cooling(requested_temperature);
+                break;
+            case STATE_HEATING_MODE:
+                command_frame.set_target_heating(requested_temperature);
+                ESP_LOGD(TAG,
+                    "FrameConf1 control: request for heating temperature %.1f, changing from "
+                    "%.1f",
+                    requested_temperature, command_frame.data().r02_setpoint_heating.decode());
+                break;
+            case STATE_AUTO_MODE:
+                ESP_LOGD(TAG,
+                    "FrameConf1 control: request for auto temperature %.1f, changing from %.1f",
+                    requested_temperature, command_frame.data().r03_setpoint_auto.decode());
+                command_frame.set_target_auto(requested_temperature);
+                break;
+            case STATE_OFF: {
+                ESP_LOGD(TAG, "FrameConf1 control: request for temperature %.1f while off",
+                    requested_temperature);
+                auto restrictions = command_frame.data().mode.get_mode_restriction();
+                if (restrictions == HeatPumpRestrict::Cooling) {
+                    ESP_LOGW(TAG, "Heater is off, restricted to cooling. Setting cooling target");
+                    command_frame.set_target_cooling(requested_temperature);
+                } else if (restrictions == HeatPumpRestrict::Heating) {
+                    ESP_LOGW(TAG, "Heater is off, restricted to heating. Setting heating target");
+                    command_frame.set_target_heating(requested_temperature);
+                } else {
+                    ESP_LOGW(TAG, "Heater is off, unknown mode for setpoint. Setting heating target");
+                    command_frame.set_target_heating(requested_temperature);
+                }
+            } break;
             }
-        } break;
         }
     }
     if(call.r04_return_diff_cooling.has_value()) {
@@ -157,13 +167,8 @@ optional<std::shared_ptr<BaseFrame>> FrameConf1::control(const HWPCall& call) {
         command_frame.data().f12_min_fan_voltage_pct = *call.f12_min_fan_voltage_pct;
     }
 
-    if (!command_frame.is_changed() && has_value) {
+    if (!command_frame.is_changed()) {
         ESP_LOGD(TAG, "control: no changes to send for temperature control frame");
-        return nullopt;
-    }
-    if (!has_value) {
-        ESP_LOGW(TAG, "Cannot control yet. Waiting for first heater state packet");
-        call.component.status_momentary_warning("Waiting for initial heater state", 5000);
         return nullopt;
     }
 

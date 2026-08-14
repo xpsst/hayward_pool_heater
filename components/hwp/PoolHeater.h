@@ -114,6 +114,9 @@ class PoolHeater : public climate::Climate, public PollingComponent {
     void set_suction_temperature_T01_sensor(sensor::Sensor* sensor) {
         this->t01_temperature_suction_ = sensor;
     }
+    void set_inlet_temperature_T02_sensor(sensor::Sensor* sensor) {
+        this->t02_temperature_inlet_ = sensor;
+    }
     void set_outlet_temperature_T03_sensor(sensor::Sensor* sensor) {
         this->t03_temperature_outlet_ = sensor;
     }
@@ -128,6 +131,9 @@ class PoolHeater : public climate::Climate, public PollingComponent {
 
     void set_exhaust_temperature_T06_sensor(sensor::Sensor* sensor) {
         this->t06_temperature_exhaust_ = sensor;
+    }
+    void set_auxiliary_temperature_cond2_sensor(sensor::Sensor* sensor) {
+        this->t_aux_cond2_temperature_ = sensor;
     }
 
     // Generic temperature sensor setters
@@ -301,7 +307,7 @@ class PoolHeater : public climate::Climate, public PollingComponent {
     HeaterStatus heater_status_;
     std::string actual_status_;
     bool passive_mode_ = true;
-    bool update_active_ = false;
+    bool update_active_ = true;
     bool start_bus_on_setup_ = true;
     text_sensor::TextSensor* actual_status_sensor_{nullptr};
     text_sensor::TextSensor* heater_status_code_sensor_{nullptr};
@@ -345,10 +351,12 @@ class PoolHeater : public climate::Climate, public PollingComponent {
 
     // Specific temperature sensors
     sensor::Sensor* t01_temperature_suction_; ///< Suction temperature sensor (T01)
+    sensor::Sensor* t02_temperature_inlet_{nullptr}; ///< Inlet water temperature sensor (T02)
     sensor::Sensor* t04_temperature_coil_;           ///< Coil temperature sensor (T04)
     sensor::Sensor* t05_temperature_ambient_; ///< Ambient temperature sensor (T05)
     sensor::Sensor* t03_temperature_outlet_; ///< Outlet temperature sensor (T03)
     sensor::Sensor* t06_temperature_exhaust_;        ///< Exhaust temperature sensor (T06)
+    sensor::Sensor* t_aux_cond2_temperature_{nullptr}; ///< Unidentified COND_2 temperature
 
     // // Generic temperature sensors for identification
     // sensor::Sensor* temperature_sensor_1_; ///< Generic temperature sensor 1

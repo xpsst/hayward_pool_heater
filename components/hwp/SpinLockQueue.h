@@ -150,6 +150,20 @@ template <typename T> class SpinLockQueue {
     bool has_next() { return !this->queue.empty(); }
 
     /**
+     * @brief Removes all queued elements and clears the availability signal.
+     * @return Number of elements removed.
+     */
+    size_t clear() {
+        this->spinlock.lock();
+        const size_t removed = this->queue.size();
+        this->queue.clear();
+        this->spinlock.unlock();
+        while (xSemaphoreTake(this->data_available, 0) == pdTRUE) {
+        }
+        return removed;
+    }
+
+    /**
      * @brief Dequeues an element from the queue.
      *
      * This function blocks until an element is available.
