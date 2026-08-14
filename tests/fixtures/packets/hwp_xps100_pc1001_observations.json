@@ -1,8 +1,20 @@
 {
   "schema_version": 1,
   "source": "XPS-100 / PC1001 passive bus observations supplied during hardware analysis",
-  "provenance": "The target frames come from the complete 30, 34, and 35 C observations in ANALYSIS.md. The D1 frame was captured from the passive ESPHome 2026.7.4 hardware log on 2026-08-14. Reconstructed target checksums use the repository's short-frame rule. These are RX-only regression fixtures and do not authorize transmission.",
+  "provenance": "The target frames come from the complete 30, 34, and 35 C observations in ANALYSIS.md and the live 15 C ESPHome 2026.7.4 hardware log on 2026-08-14. The D1 frame was captured from the passive ESPHome 2026.7.4 hardware log on 2026-08-14. Reconstructed target checksums use the repository's short-frame rule. These are RX-only regression fixtures and do not authorize transmission.",
   "packets": [
+    {
+      "id": "xps100-pc1001-target-15-variable-prefix",
+      "source_id": "ESPHome hardware log 2026-08-14 17:56:50",
+      "label": "PC1001 target 15 C with variable leading setpoint",
+      "source": "heater",
+      "length": 9,
+      "frame_type": "0xD2",
+      "bytes": ["0xD2", "0x14", "0x0F", "0x2D", "0x07", "0x0D", "0xA0", "0xEC", "0xF0"],
+      "checksum_valid": true,
+      "expected_checksum": "0xF0",
+      "notes": "Live frame proves byte 1 is variable and is not part of the PC1001 signature; byte 2 remains the direct-Celsius heating target."
+    },
     {
       "id": "xps100-pc1001-target-30",
       "source_id": "ANALYSIS.md target 30 C",

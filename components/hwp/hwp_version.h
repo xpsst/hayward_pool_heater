@@ -38,7 +38,7 @@
 namespace esphome {
 namespace hwp {
 
-static constexpr const char* HWP_COMPONENT_VERSION = "2026.05.15.12-xps100-r11-control";
+static constexpr const char* HWP_COMPONENT_VERSION = "2026.05.15.13-xps100-d2-signature";
 
 } // namespace hwp
 } // namespace esphome

@@ -441,6 +441,8 @@ void test_cond2_demo_temperature_read_contracts() {
 }
 
 void test_xps100_cond2b_target_temperature_read_contracts() {
+    const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> target_15_variable_prefix = {
+        0xD2, 0x14, 0x0F, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0xF0};
     const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> target_30 = {
         0xD2, 0x1F, 0x1E, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0x0A};
     // The 31/32 target bytes are observed mappings. Their surrounding bytes use
@@ -456,12 +458,17 @@ void test_xps100_cond2b_target_temperature_read_contracts() {
     const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> generic_cond2b = {
         0xD2, 0x1B, 0x0A, 0x28, 0x15, 0x0D, 0xA0, 0xAA, 0xB9};
 
+    assert(protocol::is_packet_checksum_valid(
+        target_15_variable_prefix.data(), target_15_variable_prefix.size()));
     assert(protocol::is_packet_checksum_valid(target_30.data(), target_30.size()));
     assert(protocol::is_packet_checksum_valid(target_31.data(), target_31.size()));
     assert(protocol::is_packet_checksum_valid(target_32.data(), target_32.size()));
     assert(protocol::is_packet_checksum_valid(target_34.data(), target_34.size()));
     assert(protocol::is_packet_checksum_valid(target_35.data(), target_35.size()));
     assert(protocol::is_packet_checksum_valid(generic_cond2b.data(), generic_cond2b.size()));
+    assert_float_eq(protocol::read_xps100_cond2b_target_temperature(
+                        target_15_variable_prefix.data(), target_15_variable_prefix.size()).value(),
+                    15.0f);
     assert_float_eq(
         protocol::read_xps100_cond2b_target_temperature(target_30.data(), target_30.size()).value(),
         30.0f);

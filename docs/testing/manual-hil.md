@@ -15,7 +15,7 @@ Compile, schema, fixture, and native byte tests are necessary but not sufficient
 ### XPS-100 / PC1001 RX Validation
 
 Keep **Active Mode** off for this entire check. After flashing revision
-`2026.05.15.11-xps100-sensors`, confirm the setup log reports that exact revision and
+`2026.05.15.13-xps100-d2-signature`, confirm the setup log reports that exact revision and
 `Registered frame decoders: 12` before checking received values.
 Change only the physical PC1001 target from 30 to 31 to 32 C and wait at least
 one climate update interval after each change. The log should report
@@ -87,7 +87,7 @@ climate:
         name: "XPS-100 Max Heating Setpoint"
 ```
 
-Flash revision `2026.05.15.12-xps100-r11-control`, leave **Active Mode** off,
+Flash revision `2026.05.15.13-xps100-d2-signature`, leave **Active Mode** off,
 and wait until the climate target, inlet temperature, read-only R11 sensor, and
 the new Number all have received values. The Number must initially show the
 heater's observed R11, normally 35.0 C; merely booting or moving it while
@@ -117,6 +117,7 @@ Stop criteria:
 
 - ESP-IDF 5 RMT passive RX is field-stable on the hardware-test branch after moving RMT callback work out of ISR context. The component boots with bus startup enabled, decodes live heater frames, and continues publishing climate state.
 - XPS-100/PC1001 passive RX is hardware-confirmed for the physical target and inlet/current water temperature. Target changes down to 20 C appear in Home Assistant after the next received update.
+- Live target-15 evidence confirms that the first short-D2 payload byte varies independently; PC1001 detection uses the invariant `2D 07 0D A0` suffix and reads the heating target from the second payload byte.
 - XPS-100 R11 command generation is byte-tested and simulator-compatible, but the first supervised 35-to-40-to-35 C heater echo test is still pending.
 - CONFIG_5 defrost eco mode has passed a supervised active TX smoke test in both directions. The heater echoed `d06 defrost: ECO` after the ECO command and later echoed `d06 defrost: NORMAL` after the NORMAL command.
 - TX/RX recovery remained stable after those writes. The duplicate RX re-arm warning `Failed to arm RMT RX: 259` was resolved by avoiding a second receive arm after transmit.

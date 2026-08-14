@@ -77,7 +77,7 @@ climate:
 - `climate.py` includes the built-in `esp_driver_rmt` IDF component during codegen; the default normal and pulse-debug compile fixtures now target `framework: type: esp-idf`.
 - For Home Assistant hardware testing from a moving branch, use `refresh: 0s` under `external_components` or pin to a commit SHA. Otherwise ESPHome can reuse its cached external component source even when the repo branch changed.
 - The XPS-100/PC1001 passive variant decodes its heating target from short
-  `COND_2_B` byte 2 when the observed `1F ?? 2D 07 0D A0 ...` signature is
+  `COND_2_B` byte 2 when the observed `?? ?? 2D 07 0D A0 ...` signature is
   present. Generic short-D2 behavior remains unchanged. Live hardware confirms
   that physical target changes down to 20 C reach Home Assistant and that the
   XPS extended D1/D1B T02 value matches the inlet/current water temperature.
@@ -90,6 +90,10 @@ climate:
   35.0-40.0 C half steps, changes only CONFIG_3 byte 10 plus checksum, and stays
   behind **Active Mode**. Byte tests are complete; the supervised
   35-to-40-to-35 C heater echo procedure remains pending.
+- Revision `2026.05.15.13-xps100-d2-signature` accepts the live PC1001 short-D2
+  form with a variable first payload byte while retaining the invariant
+  `2D 07 0D A0` signature. This fixes the false R11 safety-gate rejection seen
+  with `D2 [14 0F 2D 07 0D A0 EC]`.
 - Active control remains opt-in. **Active Mode** always starts off, passive
   climate calls are rejected before frame generation, disabling active mode
   clears pending TX frames, and each config control waits only for its own

@@ -431,6 +431,18 @@ void test_condition_parse_matches_protocol_core() {
     }
 
     {
+        const ShortPacket xps100_target_15_variable_prefix = {
+            0xD2, 0x14, 0x0F, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0xF0};
+        auto frame = stage_frame<hwp::FrameConditions2B>(
+            xps100_target_15_variable_prefix, hwp::SOURCE_HEATER);
+        hwp::heat_pump_data_t data;
+        frame.parse(data);
+        assert(data.xps100_pc1001_detected);
+        assert_float_eq(data.target_temperature.value(), 15.0f);
+        assert_float_eq(data.r02_setpoint_heating.value(), 15.0f);
+    }
+
+    {
         const ShortPacket xps100_target_30 = {
             0xD2, 0x1F, 0x1E, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0x0A};
         auto frame = stage_frame<hwp::FrameConditions2B>(xps100_target_30, hwp::SOURCE_HEATER);

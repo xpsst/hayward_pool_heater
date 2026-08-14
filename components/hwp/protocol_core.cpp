@@ -559,12 +559,13 @@ std::optional<float> read_xps100_cond2b_target_temperature(const uint8_t* data, 
         return std::nullopt;
     }
     // XPS-100 / PC1001 evidence shows a short D2 payload shaped as
-    // [0x1F, target_celsius, 0x2D, 0x07, 0x0D, 0xA0, variant].
+    // [other_setpoint, heating_target_celsius, 0x2D, 0x07, 0x0D, 0xA0, variant].
+    // The first payload byte changes independently (for example 0x14 when the
+    // cooling setpoint is 20 C), so it is not part of the variant signature.
     // Other supported heaters also emit short D2 frames, so keep this
     // reader gated to that observed variant instead of treating every
     // COND_2_B byte 2 as a setpoint.
-    if (data[1] != 0x1F || data[3] != 0x2D || data[4] != 0x07 || data[5] != 0x0D ||
-        data[6] != 0xA0) {
+    if (data[3] != 0x2D || data[4] != 0x07 || data[5] != 0x0D || data[6] != 0xA0) {
         return std::nullopt;
     }
     return static_cast<float>(data[2]);
