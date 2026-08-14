@@ -502,6 +502,55 @@ void test_conf3_parse_matches_protocol_core() {
                     protocol::read_conf3_setpoint_limit(conf3.data(), conf3.size(), 11).value());
 }
 
+void test_xps100_conf3_r11_control_contract() {
+    const Packet current = {
+        0x83, 0xB1, 0x46, 0x23, 0x0A, 0x23, 0x23, 0x4C, 0x82, 0x5A, 0x82, 0x97};
+    const Packet expected_40 = {
+        0x83, 0xB1, 0x46, 0x23, 0x0A, 0x23, 0x23, 0x4C, 0x82, 0x5A, 0x8C, 0xA1};
+
+    auto frame = stage_frame<hwp::FrameConf3>(current, hwp::SOURCE_HEATER);
+    hwp::heat_pump_data_t hp_data;
+    hp_data.xps100_pc1001_detected = true;
+    frame.parse(hp_data);
+    esphome::climate::Climate climate;
+    esphome::Component component;
+    esphome::text_sensor::TextSensor status;
+    hwp::HWPCall call(&climate, component, hp_data, status);
+    call.xps100_r11_max_heating_setpoint = 40.0f;
+
+    auto result = frame.control(call);
+    assert(result.has_value());
+    const auto command = result.value();
+    assert(command->packet.data_len == expected_40.size());
+    assert(command->packet.is_checksum_valid());
+    for (size_t i = 0; i < expected_40.size(); ++i) {
+        assert(command->packet.data[i] == expected_40[i]);
+        if (i != 10 && i != 11) {
+            assert(command->packet.data[i] == current[i]);
+        }
+    }
+
+    auto echo = make_frame(expected_40, hwp::SOURCE_HEATER);
+    frame.stage(echo);
+    frame.parse(hp_data);
+    assert_float_eq(hp_data.r11_max_heating_setpoint.value(), 40.0f);
+
+    call.xps100_r11_max_heating_setpoint = 40.5f;
+    assert(!frame.control(call).has_value());
+    call.xps100_r11_max_heating_setpoint = 34.5f;
+    assert(!frame.control(call).has_value());
+    call.xps100_r11_max_heating_setpoint = 39.2f;
+    assert(!frame.control(call).has_value());
+
+    hp_data.xps100_pc1001_detected = false;
+    call.xps100_r11_max_heating_setpoint = 39.5f;
+    assert(!frame.control(call).has_value());
+
+    hwp::FrameConf3 empty_frame;
+    hp_data.xps100_pc1001_detected = true;
+    assert(!empty_frame.control(call).has_value());
+}
+
 void test_passive_shape_contracts() {
     const ShortPacket cond2b = {0xD2, 0x1B, 0x1D, 0x28, 0x15, 0x0D, 0xA0, 0xEA, 0x0C};
     const ShortPacket condd = {0xDD, 0x1D, 0x1D, 0x19, 0x11, 0x1E, 0x00, 0x00, 0x82};
@@ -712,6 +761,7 @@ int main() {
     test_conf1_extended_setpoint_runtime_contract();
     test_condition_parse_matches_protocol_core();
     test_conf3_parse_matches_protocol_core();
+    test_xps100_conf3_r11_control_contract();
     test_passive_shape_contracts();
     test_header_format_alignment_and_highlighting();
     test_decoded_formatters_highlight_representative_changes();

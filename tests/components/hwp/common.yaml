@@ -15,3 +15,6 @@ climate:
     id: pool_heater
     name: "Pool Heater"
     pin_txrx: ${pin_txrx}
+    input:
+      xps100_r11_max_heating_setpoint:
+        name: "XPS-100 Max Heating Setpoint"

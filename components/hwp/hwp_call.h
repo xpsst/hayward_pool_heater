@@ -56,6 +56,7 @@ class HWPCall : public climate::ClimateCall {
     optional<float> r05_shutdown_temp_diff_when_cooling;
     optional<float> r06_return_diff_heating;
     optional<float> r07_shutdown_diff_heating;
+    optional<float> xps100_r11_max_heating_setpoint;
     optional<float> u02_pulses_per_liter;
     optional<DefrostEcoMode> d06_defrost_eco_mode;
     optional<FlowMeterEnable> u01_flow_meter;

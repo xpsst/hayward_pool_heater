@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 
 CODEOWNERS = ["@sle118"]
-COMPONENT_VERSION = "2026.05.15.11-xps100-sensors"
+COMPONENT_VERSION = "2026.05.15.12-xps100-r11-control"
 
 AUTO_LOAD = [
     "climate",
@@ -153,6 +153,7 @@ CONF_R08_MIN_COOL_SETPOINT = "r08_min_cool_setpoint"
 CONF_R09_MAX_COOLING_SETPOINT = "r09_max_cooling_setpoint"
 CONF_R10_MIN_HEATING_SETPOINT = "r10_min_heating_setpoint"
 CONF_R11_MAX_HEATING_SETPOINT = "r11_max_heating_setpoint"
+CONF_XPS100_R11_MAX_HEATING_SETPOINT = "xps100_r11_max_heating_setpoint"
 
 # F: Parameters of fan
 
@@ -436,6 +437,16 @@ INPUTS = dict[str, tuple[cv.Schema, callable]](
             },
             {"min_value": 0, "max_value": 10, "step": 0.5},
         ),
+        CONF_XPS100_R11_MAX_HEATING_SETPOINT: (
+            "XPS-100 Max Heating Setpoint",
+            CONF_NUMBER,
+            {
+                "icon": "mdi:thermometer-high",
+                "unit_of_measurement": UNIT_CELSIUS,
+                "device_class": DEVICE_CLASS_TEMPERATURE,
+            },
+            {"min_value": 35, "max_value": 40, "step": 0.5},
+        ),
         CONF_U02_PULSES_PER_LITER: (
             "Pulses Per Liter",
             CONF_NUMBER,
@@ -571,6 +582,10 @@ INPUTS = dict[str, tuple[cv.Schema, callable]](
       
     }
 )
+
+# System-limit writes are deliberately absent unless the user opts in. Active Mode
+# remains the runtime transmission gate and always starts disabled.
+OPT_IN_INPUTS = {CONF_XPS100_R11_MAX_HEATING_SETPOINT}
 
 SENSORS = dict[str, tuple[str, cv.Schema, callable]](
     {
@@ -840,7 +855,11 @@ for sensor_designator, (
 # assigning the name and passing schema creation options when specified
 INPUTS_SCHEMA = cv.All(
     {
-        cv.Optional(sensor_designator, default={"name": f"{sensor_name}"}): INPUT_TYPES_TEMPLATE[
+        (
+            cv.Optional(sensor_designator)
+            if sensor_designator in OPT_IN_INPUTS
+            else cv.Optional(sensor_designator, default={"name": f"{sensor_name}"})
+        ): INPUT_TYPES_TEMPLATE[
             schema_name
         ]["schema"](**schema_options)
         for sensor_designator, (
@@ -926,6 +945,9 @@ async def to_code(config):
             continue
         input_conf = config[CONF_INPUT][sensor_designator]
         input_component = cg.new_Pvariable(input_conf[CONF_ID])
+        if sensor_designator == CONF_XPS100_R11_MAX_HEATING_SETPOINT:
+            cg.add_define("USE_CLIMATE_VISUAL_OVERRIDES")
+            cg.add(heater_component.set_visual_max_temperature_override(40.0))
         registration_function = INPUT_TYPES_TEMPLATE[schema_name]["registration_function"]
         await registration_function(input_component, input_conf, **register_options)
         await cg.register_parented(input_component, heater_component)

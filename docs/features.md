@@ -73,6 +73,7 @@ The tmp merge track is closed. The current hardware-test focus has moved from re
 | CPP-110 | Final tmp closure | Done | Remaining tmp-only items are documented as merged, deferred, or rejected | `tmp/hwp` is archival reference only, not an active merge source |
 | CPP-120 | Hardware startup diagnostics | Done | HWP boots with bus startup enabled, and startup ordering avoids null data-model access | `start_bus_on_setup` remains available as a diagnostic config knob |
 | CPP-130 | XPS helper publication and passive TX guard | Done | Existing helpers publish by default while every reboot starts read-only and pending frames are discarded when active mode is disabled | Adds standalone T02 and diagnostic COND_2 auxiliary sensors; active writes remain supervised-only |
+| CPP-140 | XPS-100 R11 maximum control | Done | An explicit XPS-only Number mutates only CONFIG_3 R11 within 35.0-40.0 C and reports received state | Number is absent by default, requires PC1001 detection, uses the latest CONFIG_3 template, and remains behind Active Mode |
 
 ## Protocol And Safety
 
@@ -87,6 +88,7 @@ The tmp merge track is closed. The current hardware-test focus has moved from re
 | SAFETY-010 | Passive hardware validation | Done | Manual procedure documents setup and expected observations | See `docs/testing/manual-hil.md`; not default CI |
 | SAFETY-020 | Active-control safety gates | Done | Procedure includes preconditions, rollback, and stop criteria | Compile success is not safety validation |
 | SAFETY-030 | ESP-IDF 5 RMT migration | Done | Component migrates from deprecated legacy RMT driver or blocker is documented | New RX/TX path uses ESP-IDF 5 RMT channels at 312.5 kHz and copy encoder; passive RX is field-stable and CONFIG_5 defrost active TX has initial live validation |
+| SAFETY-040 | XPS-100 R11 live echo validation | In Progress | A supervised 35-to-40-to-35 C test confirms exact CONFIG_3 writes and heater echoes | Byte generation and hard limits are tested; live XPS-100/PC1001 validation remains pending |
 
 ## Governance
 

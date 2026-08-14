@@ -179,7 +179,7 @@ class ClimateSchemaTest(unittest.TestCase):
         )
         self.assertEqual(
             set(config["input"].keys()),
-            set(self.climate.INPUTS.keys()),
+            set(self.climate.INPUTS.keys()) - self.climate.OPT_IN_INPUTS,
         )
         self.assertEqual(config["active_mode_switch"]["name"], "Active Mode")
         self.assertEqual(config["update_sensors_switch"]["name"], "Update Sensors")
@@ -192,6 +192,29 @@ class ClimateSchemaTest(unittest.TestCase):
         self.assertIn("inlet_temperature_T02", config["sensors"])
         self.assertIn("auxiliary_temperature_cond2", config["sensors"])
         self.assertEqual(config["generate_code"]["name"], "Generate Code")
+        self.assertNotIn("xps100_r11_max_heating_setpoint", config["input"])
+
+    def test_xps100_r11_control_is_explicit_and_hard_limited(self):
+        config = self.validate(
+            {
+                "id": "pool_heater",
+                "pin_txrx": "GPIO22",
+                "input": {
+                    "xps100_r11_max_heating_setpoint": {
+                        "name": "XPS Max Heat Test"
+                    }
+                },
+            }
+        )
+
+        control = config["input"]["xps100_r11_max_heating_setpoint"]
+        self.assertEqual(control["name"], "XPS Max Heat Test")
+        number_traits = self.climate.INPUTS[
+            "xps100_r11_max_heating_setpoint"
+        ][3]
+        self.assertEqual(number_traits["min_value"], 35)
+        self.assertEqual(number_traits["max_value"], 40)
+        self.assertEqual(number_traits["step"], 0.5)
 
     def test_explicit_optional_helper_entities_validate(self):
         config = self.validate(

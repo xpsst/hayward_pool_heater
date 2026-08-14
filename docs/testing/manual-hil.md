@@ -73,6 +73,39 @@ the queued CONFIG_1/R02 command, the physical PC1001 value, and the next
 heater-originated target frame, then switch **Active Mode** off immediately.
 Do not start with defrost, flow-meter, fan voltage, or fan timing controls.
 
+### XPS-100 R11 Maximum Test
+
+Expose the system-limit control explicitly; it is intentionally absent from a
+default configuration:
+
+```yaml
+climate:
+  - platform: hwp
+    # Existing HWP options stay here.
+    input:
+      xps100_r11_max_heating_setpoint:
+        name: "XPS-100 Max Heating Setpoint"
+```
+
+Flash revision `2026.05.15.12-xps100-r11-control`, leave **Active Mode** off,
+and wait until the climate target, inlet temperature, read-only R11 sensor, and
+the new Number all have received values. The Number must initially show the
+heater's observed R11, normally 35.0 C; merely booting or moving it while
+passive must not produce a `TXQ`/`SEND` frame.
+
+For the first supervised write, enable **Active Mode**, set only the new Number
+to 40.0 C, and watch for the `XPS100 R11 control` and
+`XPS100 R11 heater echo confirmed` log lines. With the observed XPS template
+`83 B1 46 23 0A 23 23 4C 82 5A 82 97`, the command must be
+`83 B1 46 23 0A 23 23 4C 82 5A 8C A1`; only R11 and checksum may differ.
+Confirm that the read-only R11 sensor and Number both become 40.0 C.
+
+In the same session, set the Number back to 35.0 C, wait for the confirmed
+heater echo and both entities to return to 35.0 C, then switch **Active Mode**
+off. Stop immediately on an echo mismatch, any changed neighbor byte, repeated
+commands, or surprising heater/controller behavior. Do not test 45 C; firmware
+and schema reject every value above 40 C.
+
 Stop criteria:
 
 - Unexpected command bytes are logged.
@@ -84,6 +117,7 @@ Stop criteria:
 
 - ESP-IDF 5 RMT passive RX is field-stable on the hardware-test branch after moving RMT callback work out of ISR context. The component boots with bus startup enabled, decodes live heater frames, and continues publishing climate state.
 - XPS-100/PC1001 passive RX is hardware-confirmed for the physical target and inlet/current water temperature. Target changes down to 20 C appear in Home Assistant after the next received update.
+- XPS-100 R11 command generation is byte-tested and simulator-compatible, but the first supervised 35-to-40-to-35 C heater echo test is still pending.
 - CONFIG_5 defrost eco mode has passed a supervised active TX smoke test in both directions. The heater echoed `d06 defrost: ECO` after the ECO command and later echoed `d06 defrost: NORMAL` after the NORMAL command.
 - TX/RX recovery remained stable after those writes. The duplicate RX re-arm warning `Failed to arm RMT RX: 259` was resolved by avoiding a second receive arm after transmit.
 - Hardware echo showed the heater may normalize adjacent CONFIG_5 bytes while accepting the defrost mode change. Treat byte preservation around D05/U02-adjacent fields as protocol evidence to capture before broadening active-control claims.

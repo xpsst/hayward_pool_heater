@@ -87,6 +87,11 @@ void r07_shutdown_diff_heating_number::control(float value) {
     call_data.r07_shutdown_diff_heating = value;
     this->get_parent()->control(call_data);
 }
+void xps100_r11_max_heating_setpoint_number::control(float value) {
+    HWPCall call_data = this->get_parent()->instantiate_call();
+    call_data.xps100_r11_max_heating_setpoint = value;
+    this->get_parent()->control(call_data);
+}
 void f02_fan_high_speed_cool_setpoint_number::control(float value) {
     HWPCall call_data = this->get_parent()->instantiate_call();
     call_data.f02_fan_high_speed_cool_setpoint = value;

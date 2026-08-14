@@ -114,6 +114,15 @@ class r07_shutdown_diff_heating_number : public number::Number, public Parented<
     void control(float value) override;
 };
 
+class xps100_r11_max_heating_setpoint_number : public number::Number,
+                                                public Parented<PoolHeater> {
+  public:
+    xps100_r11_max_heating_setpoint_number() = default;
+
+  protected:
+    void control(float value) override;
+};
+
 class f02_fan_high_speed_cool_setpoint_number : public number::Number,
                                                  public Parented<PoolHeater> {
   public:

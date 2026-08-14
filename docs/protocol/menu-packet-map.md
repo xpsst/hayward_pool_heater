@@ -55,7 +55,7 @@ controller command packet, simulator command example, or live heater echo.
 | R08 | `r08_min_cool_setpoint` | Minimum cooling setpoint limit | byte 7 | extended temperature | runtime fixture | read-only |
 | R09 | `r09_max_cooling_setpoint` | Maximum cooling setpoint limit | byte 8 | extended temperature | demo command fixture | read-only, fixture-backed |
 | R10 | `r10_min_heating_setpoint` | Minimum heating setpoint limit | byte 9 | extended temperature | demo command fixture | read-only, fixture-backed |
-| R11 | `r11_max_heating_setpoint` | Maximum heating setpoint limit | byte 10 | extended temperature | demo command fixture | read-only, fixture-backed |
+| R11 | `r11_max_heating_setpoint` | Maximum heating setpoint limit | byte 10 | extended temperature | demo command fixture / XPS-100 observed CONFIG_3 | implemented, byte-tested; XPS opt-in only, live echo pending |
 
 ## CONFIG_4 / `0x84`
 
@@ -92,6 +92,12 @@ controller command packet, simulator command example, or live heater echo.
 |----|----|----|----|----|----|----|
 | R02 | `r02_setpoint_heating` | Heating setpoint fallback | `0xD2` / `COND_2_B` short packet with payload signature `1F ?? 2D 07 0D A0 ...` | byte 2 | direct Celsius byte | read-only, hardware-confirmed |
 | T02 | `t02_temperature_inlet` | Inlet/current water temperature | `0xD1` / `COND_1` or `COND_1_B`, after XPS signature detection | byte 9 | extended half-degree temperature | read-only, hardware-confirmed |
+
+The optional `input.xps100_r11_max_heating_setpoint` Number controls R11 only
+after the PC1001 short-D2 signature has been received. It accepts 35.0 to
+40.0 C in 0.5 C steps, copies the latest complete CONFIG_3 frame, changes only
+byte 10, and recalculates the checksum. It is not created by default, does not
+write at boot, and remains blocked while **Active Mode** is off.
 
 ## Workflow
 

@@ -101,7 +101,14 @@ class FrameConf3 : public BaseFrame {
   public:
     CLASS_DEFAULT_IMPL(FrameConf3, conf_3_t);
     static constexpr uint8_t FRAME_ID_CONF_3 = 0x83;
+    static constexpr float XPS100_R11_MIN_C = 35.0f;
+    static constexpr float XPS100_R11_MAX_C = 40.0f;
+    static constexpr float XPS100_R11_STEP_C = 0.5f;
     void traits(climate::ClimateTraits& traits, heat_pump_data_t& hp_data) override;
+
+  private:
+    optional<float> pending_xps100_r11_;
+    bool pending_xps100_r11_mismatch_logged_{false};
 };
 
 } // namespace hwp

@@ -208,6 +208,8 @@ void PoolHeater::update() {
     publish_sensor_value(this->hp_data_.r10_min_heating_setpoint, this->r10_min_heating_setpoint_);
     ESP_LOGVV(POOL_HEATER_TAG, "Setting max heating setpoint");
     publish_sensor_value(this->hp_data_.r11_max_heating_setpoint, this->r11_max_heating_setpoint_);
+    publish_sensor_value(
+        this->hp_data_.r11_max_heating_setpoint, this->xps100_r11_max_heating_setpoint_);
     ESP_LOGVV(POOL_HEATER_TAG, "Setting pulses per liter");
     publish_sensor_value(this->hp_data_.U02_pulses_per_liter, this->u02_pulses_per_liter_);
     ESP_LOGVV(POOL_HEATER_TAG, "Setting fan high speed cool setpoint");

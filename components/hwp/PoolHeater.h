@@ -190,6 +190,9 @@ class PoolHeater : public climate::Climate, public PollingComponent {
     void set_r11_max_heating_setpoint_sensor(sensor::Sensor* sensor) {
         this->r11_max_heating_setpoint_ = sensor;
     }
+    void set_xps100_r11_max_heating_setpoint_sensor(number::Number* sensor) {
+        this->xps100_r11_max_heating_setpoint_ = sensor;
+    }
     void set_u01_flow_meter_sensor(select::Select* sensor) { this->u01_flow_meter_ = sensor; }
     void set_d06_defrost_eco_mode_sensor(select::Select* sensor) {
         this->d06_defrost_eco_mode_ = sensor;
@@ -332,6 +335,7 @@ class PoolHeater : public climate::Climate, public PollingComponent {
     sensor::Sensor* r09_max_cooling_setpoint_;
     sensor::Sensor* r10_min_heating_setpoint_;
     sensor::Sensor* r11_max_heating_setpoint_;
+    number::Number* xps100_r11_max_heating_setpoint_{nullptr};
     select::Select* u01_flow_meter_;
     select::Select* d06_defrost_eco_mode_;
     number::Number* d05_min_economy_defrost_time_minutes_;

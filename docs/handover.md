@@ -85,6 +85,11 @@ climate:
   sensor and the fixture-backed but physically unidentified COND_2 byte-8 value
   as a diagnostic auxiliary sensor. Existing helper sensors now publish after
   startup because **Update Sensors** defaults on.
+- Revision `2026.05.15.12-xps100-r11-control` adds an opt-in XPS-100 R11 Number.
+  It is absent by default, requires the detected PC1001 signature, accepts only
+  35.0-40.0 C half steps, changes only CONFIG_3 byte 10 plus checksum, and stays
+  behind **Active Mode**. Byte tests are complete; the supervised
+  35-to-40-to-35 C heater echo procedure remains pending.
 - Active control remains opt-in. **Active Mode** always starts off, passive
   climate calls are rejected before frame generation, disabling active mode
   clears pending TX frames, and each config control waits only for its own
@@ -92,6 +97,10 @@ climate:
   `docs/testing/manual-hil.md` before making XPS active-control claims.
 - Current Windows verification uses ESPHome `2026.7.4`, which selected ESP-IDF
   `5.5.5`. The normal and pulse-debug fixtures both compile successfully.
+- The R11-control slice also compiles fully with the newest publicly available
+  PyPI release in the local test environment, ESPHome `2026.6.5` with ESP-IDF
+  `5.5.4`. ESPHome `2026.7.4` was not available from that package index, so its
+  final build remains part of the device-side installation check.
 
 ## Last Verified
 
@@ -121,6 +130,8 @@ Choose the next slice from normal project priorities rather than tmp merge work.
 
 Good candidates:
 
+- run the supervised XPS-100 R11 35-to-40-to-35 C echo procedure, preserve the
+  logs as an active-TX fixture, and only then mark SAFETY-040 complete
 - review `COND_1`/`COND_2` temperature encoding separately if hardware evidence shows values above the short-format range; the issue #11 fix intentionally changed only `CONFIG_1` setpoint encoding in this slice
 - mine the remaining non-fan 2024-10-31 condition/clock `test` windows only if they add decode coverage beyond current passive runtime contracts; `COND_D` remains research-only until at least one field meaning is named
 - add the next analysis CLI slice for grouped frame diffs/candidate fields now that firmware formatter output has native alignment/highlight contracts
