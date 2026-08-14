@@ -35,8 +35,10 @@
 #include "FrameConditions2.h"
 #include "CS.h"
 #include "Schema.h"
+#include "protocol_core.h"
 namespace esphome {
 namespace hwp {
+static constexpr char TAG[] = "hwp";
 CLASS_ID_DECLARATION(esphome::hwp::FrameConditions2B);
 std::shared_ptr<BaseFrame> FrameConditions2B::create() {
     return std::make_shared<FrameConditions2B>(); // Create a FrameTemperature if type matches
@@ -81,9 +83,25 @@ std::string FrameConditions2B::format(const conditions2b_t& val, const condition
  * 
  * @param hp_data The heat_pump_data_t structure to fill
  * @see heat_pump_data_t
- * @note Currently does nothing
+ * @note The XPS-100 / PC1001 variant carries its heating target in byte 2 of
+ * the short D2 payload as direct Celsius. Generic short D2 frames remain
+ * reserved until their fields are verified.
  */
-void FrameConditions2B::parse(heat_pump_data_t& hp_data) { }
+void FrameConditions2B::parse(heat_pump_data_t& hp_data) {
+    auto xps100_target =
+        protocol::read_xps100_cond2b_target_temperature(this->packet.data, this->packet.data_len);
+    if (!xps100_target.has_value()) {
+        return;
+    }
+    const bool changed = !hp_data.target_temperature.has_value() ||
+                         hp_data.target_temperature.value() != xps100_target.value();
+    hp_data.target_temperature = xps100_target.value();
+    hp_data.r02_setpoint_heating = xps100_target.value();
+    if (changed) {
+        ESP_LOGD(TAG, "XPS100 debug: short D2 target raw=0x%02X decoded=%.1fC",
+            this->packet.data[2], xps100_target.value());
+    }
+}
 
 } // namespace hwp
 } // namespace esphome

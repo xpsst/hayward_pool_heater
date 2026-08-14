@@ -440,6 +440,47 @@ void test_cond2_demo_temperature_read_contracts() {
                 .has_value());
 }
 
+void test_xps100_cond2b_target_temperature_read_contracts() {
+    const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> target_30 = {
+        0xD2, 0x1F, 0x1E, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0x0A};
+    // The 31/32 target bytes are observed mappings. Their surrounding bytes use
+    // the target-30 frame shape to verify that decoding is value-derived.
+    const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> target_31 = {
+        0xD2, 0x1F, 0x1F, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0x0B};
+    const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> target_32 = {
+        0xD2, 0x1F, 0x20, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0x0C};
+    const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> target_34 = {
+        0xD2, 0x1F, 0x22, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0x0E};
+    const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> target_35 = {
+        0xD2, 0x1F, 0x23, 0x2D, 0x07, 0x0D, 0xA0, 0xAC, 0xCF};
+    const std::array<uint8_t, protocol::FRAME_DATA_LENGTH_SHORT> generic_cond2b = {
+        0xD2, 0x1B, 0x0A, 0x28, 0x15, 0x0D, 0xA0, 0xAA, 0xB9};
+
+    assert(protocol::is_packet_checksum_valid(target_30.data(), target_30.size()));
+    assert(protocol::is_packet_checksum_valid(target_31.data(), target_31.size()));
+    assert(protocol::is_packet_checksum_valid(target_32.data(), target_32.size()));
+    assert(protocol::is_packet_checksum_valid(target_34.data(), target_34.size()));
+    assert(protocol::is_packet_checksum_valid(target_35.data(), target_35.size()));
+    assert(protocol::is_packet_checksum_valid(generic_cond2b.data(), generic_cond2b.size()));
+    assert_float_eq(
+        protocol::read_xps100_cond2b_target_temperature(target_30.data(), target_30.size()).value(),
+        30.0f);
+    assert_float_eq(
+        protocol::read_xps100_cond2b_target_temperature(target_31.data(), target_31.size()).value(),
+        31.0f);
+    assert_float_eq(
+        protocol::read_xps100_cond2b_target_temperature(target_32.data(), target_32.size()).value(),
+        32.0f);
+    assert_float_eq(
+        protocol::read_xps100_cond2b_target_temperature(target_34.data(), target_34.size()).value(),
+        34.0f);
+    assert_float_eq(
+        protocol::read_xps100_cond2b_target_temperature(target_35.data(), target_35.size()).value(),
+        35.0f);
+    assert(!protocol::read_xps100_cond2b_target_temperature(
+                generic_cond2b.data(), generic_cond2b.size()).has_value());
+}
+
 void test_config1_extended_setpoint_regression_contracts() {
     const std::array<uint8_t, protocol::FRAME_DATA_LENGTH> r02_33_5 = {
         0x81, 0xB1, 0x26, 0x6E, 0x7F, 0x64, 0x3D, 0x3D, 0x3D, 0x3D, 0x32, 0xCF};
@@ -724,6 +765,7 @@ int main() {
     test_fan_command_byte_helpers();
     test_config1_config3_demo_read_contracts();
     test_cond2_demo_temperature_read_contracts();
+    test_xps100_cond2b_target_temperature_read_contracts();
     test_config1_extended_setpoint_regression_contracts();
     test_config1_demo_write_contracts();
     test_fan_fixture_write_contracts();

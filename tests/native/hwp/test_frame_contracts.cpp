@@ -130,6 +130,14 @@ FrameType stage_frame(const Packet& packet, hwp::frame_source_t source) {
     return frame;
 }
 
+template <typename FrameType>
+FrameType stage_frame(const ShortPacket& packet, hwp::frame_source_t source) {
+    auto base = make_frame(packet, source);
+    FrameType frame;
+    frame.stage(base);
+    return frame;
+}
+
 void test_frame_matching_contracts() {
     const Packet conf1 = {
         0x81, 0xB1, 0x1A, 0x72, 0x48, 0x72, 0x3D, 0x3D, 0x3D, 0x3D, 0x37, 0xA3};
@@ -411,6 +419,42 @@ void test_condition_parse_matches_protocol_core() {
                             temp_out_1.data(), temp_out_1.size(), 6).value());
         assert_float_eq(protocol::read_cond2_temperature(
                             temp_out_1.data(), temp_out_1.size(), 8).value(), 20.0f);
+    }
+
+    {
+        const ShortPacket xps100_target_30 = {
+            0xD2, 0x1F, 0x1E, 0x2D, 0x07, 0x0D, 0xA0, 0xEC, 0x0A};
+        auto frame = stage_frame<hwp::FrameConditions2B>(xps100_target_30, hwp::SOURCE_HEATER);
+        hwp::heat_pump_data_t data;
+        frame.parse(data);
+        assert(data.target_temperature.has_value());
+        assert(data.r02_setpoint_heating.has_value());
+        assert_float_eq(data.target_temperature.value(), 30.0f);
+        assert_float_eq(data.r02_setpoint_heating.value(),
+                        protocol::read_xps100_cond2b_target_temperature(
+                            xps100_target_30.data(), xps100_target_30.size()).value());
+    }
+
+    {
+        const ShortPacket xps100_target_35 = {
+            0xD2, 0x1F, 0x23, 0x2D, 0x07, 0x0D, 0xA0, 0xAC, 0xCF};
+        auto frame = stage_frame<hwp::FrameConditions2B>(xps100_target_35, hwp::SOURCE_HEATER);
+        hwp::heat_pump_data_t data;
+        frame.parse(data);
+        assert(data.target_temperature.has_value());
+        assert(data.r02_setpoint_heating.has_value());
+        assert_float_eq(data.target_temperature.value(), 35.0f);
+        assert_float_eq(data.r02_setpoint_heating.value(), 35.0f);
+    }
+
+    {
+        const ShortPacket generic_cond2b = {
+            0xD2, 0x1B, 0x0A, 0x28, 0x15, 0x0D, 0xA0, 0xAA, 0xB9};
+        auto frame = stage_frame<hwp::FrameConditions2B>(generic_cond2b, hwp::SOURCE_HEATER);
+        hwp::heat_pump_data_t data;
+        frame.parse(data);
+        assert(!data.target_temperature.has_value());
+        assert(!data.r02_setpoint_heating.has_value());
     }
 }
 

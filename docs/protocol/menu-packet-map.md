@@ -28,7 +28,7 @@ controller command packet, simulator command example, or live heater echo.
 |----|----|----|----|----|----|----|
 | H02 | `h02_mode_restrictions` | Mode restrictions | byte 2 | bit field enum | implemented config frame | implemented, byte-tested |
 | R01 | `r01_setpoint_cooling` | Cooling setpoint | byte 3 | extended temperature | demo command fixture / issue #11 | implemented, byte-tested |
-| R02 | `r02_setpoint_heating` | Heating setpoint | byte 4 | extended temperature | demo command fixture / issue #11 | implemented, byte-tested |
+| R02 | `r02_setpoint_heating` | Heating setpoint | byte 4 | extended temperature | demo command fixture / issue #11 / XPS100 short-D2 passive observation | implemented, byte-tested |
 | R03 | `r03_setpoint_auto` | Auto setpoint | byte 5 | extended temperature | demo command fixture / issue #11 | implemented, fixture-backed |
 | R04 | `r04_return_diff_cooling` | Cooling return differential | byte 6 | extended temperature/delta | demo command fixture | implemented, byte-tested |
 | R05 | `r05_shutdown_temp_diff_when_cooling` | Cooling shutdown differential | byte 7 | extended temperature/delta | demo command fixture | implemented, byte-tested |
@@ -85,6 +85,12 @@ controller command packet, simulator command example, or live heater echo.
 | Menu | Field | Meaning | Frame | Location | Encoding | Status |
 |----|----|----|----|----|----|----|
 | S02 | `s02_water_flow` | Water flow status | `0xD1` / `COND_1B` | byte 3 bit 2 | status bit | read-only |
+
+## XPS-100 / PC1001 Passive Variant
+
+| Menu | Field | Meaning | Frame | Location | Encoding | Status |
+|----|----|----|----|----|----|----|
+| R02 | `r02_setpoint_heating` | Heating setpoint fallback | `0xD2` / `COND_2_B` short packet with payload signature `1F ?? 2D 07 0D A0 ...` | byte 2 | direct Celsius byte | read-only, hardware-observed |
 
 ## Workflow
 

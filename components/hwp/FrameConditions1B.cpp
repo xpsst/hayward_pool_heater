@@ -37,6 +37,7 @@
 #include "Schema.h"
 namespace esphome {
 namespace hwp {
+static constexpr char TAG[] = "hwp";
 CLASS_ID_DECLARATION(esphome::hwp::FrameConditions1B);
 
 /**
@@ -146,7 +147,15 @@ const char* FrameConditions1B::get_flow_string(bool flow) {
  */
 void FrameConditions1B::parse(heat_pump_data_t& hp_data) {
     hp_data.S02_water_flow = data_->get_flow_meter_enable();
-    hp_data.t02_temperature_inlet = data_->t02_temperature.decode();
+    const float inlet_temperature = data_->t02_temperature.decode();
+    const bool changed = !hp_data.t02_temperature_inlet.has_value() ||
+                         hp_data.t02_temperature_inlet.value() != inlet_temperature;
+    hp_data.t02_temperature_inlet = inlet_temperature;
+    if (changed) {
+        ESP_LOGD(TAG, "XPS100 debug: D1B inlet raw=0x%02X decoded=%.1fC flow=%s",
+            data_->t02_temperature.raw, inlet_temperature,
+            get_flow_string(data_->S02_water_flow));
+    }
 }
 } // namespace hwp
 } // namespace esphome

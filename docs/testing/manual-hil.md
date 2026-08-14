@@ -12,6 +12,21 @@ Compile, schema, fixture, and native byte tests are necessary but not sufficient
 4. Confirm offline/online transitions do not publish connected or stale state as current truth.
 5. Capture logs for any unknown frames or checksum failures and convert them into fixtures before changing decode logic.
 
+### XPS-100 / PC1001 RX Validation
+
+Keep **Active Mode** off for this entire check. After flashing revision
+`2026.05.15.9-xps100-rx`, confirm the setup log reports that exact revision.
+Change only the physical PC1001 target from 30 to 31 to 32 C and wait at least
+one climate update interval after each change. The log should report
+`XPS100 debug: short D2 target` with raw values `0x1E`, `0x1F`, and `0x20`, and
+Home Assistant should follow with 30, 31, and 32 C respectively.
+
+For the current temperature, record the first
+`XPS100 debug: D1 inlet` or `XPS100 debug: D1B inlet` line. Its raw byte is full
+D1 packet byte 9 and uses the component's existing half-degree temperature
+encoding. Compare the decoded value with the PC1001 water/inlet display before
+claiming the XPS-100 T02 mapping as hardware-verified.
+
 ## Active-Control Smoke Test
 
 Run active-control tests only when the heater can be supervised locally and stopped quickly.

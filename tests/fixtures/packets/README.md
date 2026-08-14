@@ -5,6 +5,8 @@ These fixtures are curated from hardware-derived tmp reference material:
 - `hwp_demo_packets.json` comes from `tmp/hwp/analysis/simulator/DemoFrames.h`.
 - `hwp_hardware_log_2025_06_24.json` comes from the recent ignored
   `tmp/hwp/POOL_esphome_logs.log` hardware trace.
+- `hwp_xps100_pc1001_observations.json` records the XPS-100/PC1001 short-D2
+  target-temperature observations supplied during passive hardware testing.
 
 They are packet regression fixtures, not a replacement for supervised live
 heater validation.

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "source": "XPS-100 / PC1001 passive bus observations supplied during hardware analysis",
+  "provenance": "The first eight bytes come from the complete 30, 34, and 35 C observations in ANALYSIS.md. The ninth checksum byte is reconstructed with the repository's short-frame checksum rule. These are RX-only regression fixtures and do not authorize transmission.",
+  "packets": [
+    {
+      "id": "xps100-pc1001-target-30",
+      "source_id": "ANALYSIS.md target 30 C",
+      "label": "PC1001 target 30 C",
+      "source": "heater",
+      "length": 9,
+      "frame_type": "0xD2",
+      "bytes": ["0xD2", "0x1F", "0x1E", "0x2D", "0x07", "0x0D", "0xA0", "0xEC", "0x0A"],
+      "checksum_valid": true,
+      "expected_checksum": "0x0A",
+      "notes": "Observed short COND_2_B payload; byte 2 is direct Celsius and changes with the physical target."
+    },
+    {
+      "id": "xps100-pc1001-target-34",
+      "source_id": "ANALYSIS.md target 34 C",
+      "label": "PC1001 target 34 C",
+      "source": "heater",
+      "length": 9,
+      "frame_type": "0xD2",
+      "bytes": ["0xD2", "0x1F", "0x22", "0x2D", "0x07", "0x0D", "0xA0", "0xEC", "0x0E"],
+      "checksum_valid": true,
+      "expected_checksum": "0x0E",
+      "notes": "Observed short COND_2_B target-byte mapping 0x22 to 34 C."
+    },
+    {
+      "id": "xps100-pc1001-target-35",
+      "source_id": "ANALYSIS.md target 35 C",
+      "label": "PC1001 target 35 C",
+      "source": "heater",
+      "length": 9,
+      "frame_type": "0xD2",
+      "bytes": ["0xD2", "0x1F", "0x23", "0x2D", "0x07", "0x0D", "0xA0", "0xAC", "0xCF"],
+      "checksum_valid": true,
+      "expected_checksum": "0xCF",
+      "notes": "Observed target-byte mapping 0x23 to 35 C; byte 7 differs from lower-target observations and is deliberately excluded from variant matching."
+    }
+  ]
+}

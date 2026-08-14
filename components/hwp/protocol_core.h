@@ -148,6 +148,7 @@ std::optional<float> read_conf1_f12_min_fan_voltage_pct(const uint8_t* data, siz
 std::optional<float> read_cond1_inlet_temperature(const uint8_t* data, size_t length);
 std::optional<uint8_t> read_cond1b_water_flow(const uint8_t* data, size_t length);
 std::optional<float> read_cond2_temperature(const uint8_t* data, size_t length, uint8_t field_number);
+std::optional<float> read_xps100_cond2b_target_temperature(const uint8_t* data, size_t length);
 std::optional<float> read_conf3_setpoint_limit(const uint8_t* data, size_t length, uint8_t field_number);
 
 bool set_conf1_temperature_parameter(uint8_t* data, size_t length, uint8_t field_number, float value);
