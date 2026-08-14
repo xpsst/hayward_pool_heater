@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 
 CODEOWNERS = ["@sle118"]
-COMPONENT_VERSION = "2026.05.15.9-xps100-rx"
+COMPONENT_VERSION = "2026.05.15.10-xps100-rx"
 
 AUTO_LOAD = [
     "climate",

@@ -34,6 +34,7 @@
 #include "FrameConditions1.h"
 #include "CS.h"
 #include "Schema.h"
+#include "protocol_core.h"
 namespace esphome {
 namespace hwp {
 static constexpr char TAG[] = "hwp";
@@ -136,11 +137,14 @@ std::string FrameConditions1::format(const conditions_1_t& val, const conditions
  * @note current elements identified in this frame are inlet temperature
  */
 void FrameConditions1::parse(heat_pump_data_t& hp_data) {
-    const float inlet_temperature = data_->t02_temperature.decode();
+    const float inlet_temperature = hp_data.xps100_pc1001_detected
+                                        ? protocol::decode_temperature_extended(
+                                              data_->t02_temperature.raw)
+                                        : data_->t02_temperature.decode();
     const bool changed = !hp_data.t02_temperature_inlet.has_value() ||
                          hp_data.t02_temperature_inlet.value() != inlet_temperature;
     hp_data.t02_temperature_inlet = inlet_temperature;
-    if (changed) {
+    if (changed && hp_data.xps100_pc1001_detected) {
         ESP_LOGD(TAG, "XPS100 debug: D1 inlet raw=0x%02X decoded=%.1fC",
             data_->t02_temperature.raw, inlet_temperature);
     }

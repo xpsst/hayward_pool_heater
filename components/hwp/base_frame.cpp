@@ -35,8 +35,6 @@
 namespace esphome {
 namespace hwp {
 const char* TAG_PACKET = "hwp.pk";
-// Static member definition.
-std::vector<BaseFrame::frame_registry_t> BaseFrame::registry_;
 
 // Constructors.
 BaseFrame::BaseFrame()
@@ -75,7 +73,10 @@ BaseFrame& BaseFrame::operator=(const BaseFrame& other) {
 }
 
 // Static methods.
-std::vector<BaseFrame::frame_registry_t>& BaseFrame::get_registry() { return registry_; }
+std::vector<BaseFrame::frame_registry_t>& BaseFrame::get_registry() {
+    static std::vector<frame_registry_t> registry;
+    return registry;
+}
 
 std::shared_ptr<BaseFrame> BaseFrame::base_create() { return std::make_shared<BaseFrame>(); }
 

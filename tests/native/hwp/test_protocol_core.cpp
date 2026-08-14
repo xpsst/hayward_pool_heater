@@ -479,6 +479,12 @@ void test_xps100_cond2b_target_temperature_read_contracts() {
         35.0f);
     assert(!protocol::read_xps100_cond2b_target_temperature(
                 generic_cond2b.data(), generic_cond2b.size()).has_value());
+
+    assert_float_eq(protocol::decode_temperature(0x83), -1.5f);
+    assert_float_eq(protocol::decode_temperature_extended(0x83), 35.5f);
+    assert_float_eq(protocol::decode_temperature_extended(0x84), 36.0f);
+    assert_float_eq(protocol::decode_temperature_extended(0x85), 36.5f);
+    assert_float_eq(protocol::decode_temperature_extended(0x86), 37.0f);
 }
 
 void test_config1_extended_setpoint_regression_contracts() {

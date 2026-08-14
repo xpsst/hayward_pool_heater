@@ -173,6 +173,14 @@ class BaseFrame {
     static std::vector<frame_registry_t>& get_registry();
 
     /**
+     * @brief Retain and count the built-in frame decoders in archive-based firmware builds.
+     *
+     * ESP-IDF links components as static archives, so decoder translation units that only
+     * self-register during static initialization otherwise may not be included.
+     */
+    static size_t ensure_builtin_frame_classes_linked();
+
+    /**
      * @brief Factory method for creating the base frame instance.
      *
      * This method is the is the factory for the base frame class. It is used to create
@@ -834,14 +842,6 @@ class BaseFrame {
      * @brief The previous frame data (if any).
      */
     optional<hp_packetdata_t> prev_;
-
-    /**
-     * @brief The frame registry of all specialized frames.
-     * Each specialized frame class is responsible for registering itself. This
-     * is simplified with macro `CLASS_ID_DECLARATION`.
-     *
-     */
-    static std::vector<frame_registry_t> registry_; ///< The frame registry.
 
     /**
      * @brief This function is used to transfer the frame data to the previous frame data

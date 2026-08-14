@@ -62,6 +62,10 @@ void assert_float_eq(float actual, float expected) {
     assert(std::fabs(actual - expected) < 0.01f);
 }
 
+void test_builtin_frame_registry_link_contract() {
+    assert(hwp::BaseFrame::ensure_builtin_frame_classes_linked() == 12);
+}
+
 hwp::BaseFrame make_frame(const Packet& packet, hwp::frame_source_t source) {
     hwp::BaseFrame frame;
     std::memcpy(frame.packet.data, packet.data(), packet.size());
@@ -427,12 +431,26 @@ void test_condition_parse_matches_protocol_core() {
         auto frame = stage_frame<hwp::FrameConditions2B>(xps100_target_30, hwp::SOURCE_HEATER);
         hwp::heat_pump_data_t data;
         frame.parse(data);
+        assert(data.xps100_pc1001_detected);
         assert(data.target_temperature.has_value());
         assert(data.r02_setpoint_heating.has_value());
         assert_float_eq(data.target_temperature.value(), 30.0f);
         assert_float_eq(data.r02_setpoint_heating.value(),
                         protocol::read_xps100_cond2b_target_temperature(
                             xps100_target_30.data(), xps100_target_30.size()).value());
+
+        const Packet xps100_d1 = {
+            0xD1, 0xB1, 0x05, 0x00, 0x00, 0x00, 0x00, 0x78, 0x5E, 0x83, 0x1B, 0xFB};
+        auto d1_frame = stage_frame<hwp::FrameConditions1>(xps100_d1, hwp::SOURCE_HEATER);
+        d1_frame.parse(data);
+        assert(data.t02_temperature_inlet.has_value());
+        assert_float_eq(data.t02_temperature_inlet.value(), 35.5f);
+
+        const Packet xps100_d1b = {
+            0xD1, 0xB1, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x78, 0x5E, 0x83, 0x1B, 0x05};
+        auto d1b_frame = stage_frame<hwp::FrameConditions1B>(xps100_d1b, hwp::SOURCE_HEATER);
+        d1b_frame.parse(data);
+        assert_float_eq(data.t02_temperature_inlet.value(), 35.5f);
     }
 
     {
@@ -453,6 +471,7 @@ void test_condition_parse_matches_protocol_core() {
         auto frame = stage_frame<hwp::FrameConditions2B>(generic_cond2b, hwp::SOURCE_HEATER);
         hwp::heat_pump_data_t data;
         frame.parse(data);
+        assert(!data.xps100_pc1001_detected);
         assert(!data.target_temperature.has_value());
         assert(!data.r02_setpoint_heating.has_value());
     }
@@ -678,6 +697,7 @@ void test_decoded_formatters_highlight_representative_changes() {
 }
 
 int main() {
+    test_builtin_frame_registry_link_contract();
     test_frame_matching_contracts();
     test_passive_frame_matching_contracts();
     test_conf2_parse_matches_protocol_core();

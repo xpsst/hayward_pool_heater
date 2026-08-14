@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "XPS-100 / PC1001 passive bus observations supplied during hardware analysis",
-  "provenance": "The first eight bytes come from the complete 30, 34, and 35 C observations in ANALYSIS.md. The ninth checksum byte is reconstructed with the repository's short-frame checksum rule. These are RX-only regression fixtures and do not authorize transmission.",
+  "provenance": "The target frames come from the complete 30, 34, and 35 C observations in ANALYSIS.md. The D1 frame was captured from the passive ESPHome 2026.7.4 hardware log on 2026-08-14. Reconstructed target checksums use the repository's short-frame rule. These are RX-only regression fixtures and do not authorize transmission.",
   "packets": [
     {
       "id": "xps100-pc1001-target-30",
@@ -38,6 +38,18 @@
       "checksum_valid": true,
       "expected_checksum": "0xCF",
       "notes": "Observed target-byte mapping 0x23 to 35 C; byte 7 differs from lower-target observations and is deliberately excluded from variant matching."
+    },
+    {
+      "id": "xps100-pc1001-d1-inlet-candidate",
+      "source_id": "ESPHome hardware log 2026-08-14 13:04-13:06",
+      "label": "XPS-100 D1 inlet candidate 35.5 C",
+      "source": "heater",
+      "length": 12,
+      "frame_type": "0xD1",
+      "bytes": ["0xD1", "0xB1", "0x05", "0x00", "0x00", "0x00", "0x00", "0x78", "0x5E", "0x83", "0x1B", "0xFB"],
+      "checksum_valid": true,
+      "expected_checksum": "0xFB",
+      "notes": "After the XPS short-D2 signature is detected, full packet byte 9 uses extended temperature encoding: 0x83 decodes to the inlet candidate 35.5 C. Physical display comparison is still required."
     }
   ]
 }

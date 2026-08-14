@@ -93,6 +93,7 @@ void FrameConditions2B::parse(heat_pump_data_t& hp_data) {
     if (!xps100_target.has_value()) {
         return;
     }
+    hp_data.xps100_pc1001_detected = true;
     const bool changed = !hp_data.target_temperature.has_value() ||
                          hp_data.target_temperature.value() != xps100_target.value();
     hp_data.target_temperature = xps100_target.value();

@@ -55,6 +55,8 @@ PoolHeater::PoolHeater(InternalGPIOPin* gpio_pin) {
 
 void PoolHeater::setup() {
     ESP_LOGI(POOL_HEATER_TAG, "HWP component revision: %s", HWP_COMPONENT_VERSION);
+    ESP_LOGI(POOL_HEATER_TAG, "Registered frame decoders: %u",
+        static_cast<unsigned>(BaseFrame::ensure_builtin_frame_classes_linked()));
     ESP_LOGI(POOL_HEATER_TAG, "Restoring state");
     restore_state_();
     this->driver_.set_data_model(hp_data_);

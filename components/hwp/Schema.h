@@ -1768,6 +1768,9 @@ typedef struct {
     /// demand.
     optional<float> t02_temperature_inlet;
 
+    /// @brief Set after the XPS-100 / PC1001 short-D2 signature is observed.
+    bool xps100_pc1001_detected = false;
+
     /// @brief Outlet water temperature in degrees Celsius.
     /// Measures the temperature of the water exiting the heat pump, reflecting heat transfer
     /// effectiveness.

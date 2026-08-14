@@ -65,6 +65,7 @@ mkdir -p "$build_dir"
   "$repo_root/components/hwp/protocol_core.cpp" \
   "$repo_root/components/hwp/Schema.cpp" \
   "$repo_root/components/hwp/base_frame.cpp" \
+  "$repo_root/components/hwp/frame_registry.cpp" \
   "$repo_root/components/hwp/FrameClock.cpp" \
   "$repo_root/components/hwp/FrameConditions1.cpp" \
   "$repo_root/components/hwp/FrameConditions1B.cpp" \
