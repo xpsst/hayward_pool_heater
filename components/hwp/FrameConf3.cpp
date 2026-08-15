@@ -169,9 +169,9 @@ optional<std::shared_ptr<BaseFrame>> FrameConf3::control(const HWPCall& call) {
     const bool valid_step = std::fabs(half_steps - std::round(half_steps)) < 0.01f;
     if (requested < XPS100_R11_MIN_C || requested > XPS100_R11_MAX_C || !valid_step) {
         ESP_LOGE(TAG,
-            "XPS100 R11 control rejected: %.2fC must be 35.0C to 40.0C in 0.5C steps",
+            "XPS100 R11 control rejected: %.2fC must be 35.0C to 45.0C in 0.5C steps",
             requested);
-        call.component.status_momentary_warning("XPS100 R11 must be 35.0C to 40.0C", 5000);
+        call.component.status_momentary_warning("XPS100 R11 must be 35.0C to 45.0C", 5000);
         return nullopt;
     }
 

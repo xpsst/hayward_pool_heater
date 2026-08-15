@@ -213,7 +213,7 @@ class ClimateSchemaTest(unittest.TestCase):
             "xps100_r11_max_heating_setpoint"
         ][3]
         self.assertEqual(number_traits["min_value"], 35)
-        self.assertEqual(number_traits["max_value"], 40)
+        self.assertEqual(number_traits["max_value"], 45)
         self.assertEqual(number_traits["step"], 0.5)
 
     def test_explicit_optional_helper_entities_validate(self):

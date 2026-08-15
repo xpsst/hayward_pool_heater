@@ -73,7 +73,7 @@ The tmp merge track is closed. The current hardware-test focus has moved from re
 | CPP-110 | Final tmp closure | Done | Remaining tmp-only items are documented as merged, deferred, or rejected | `tmp/hwp` is archival reference only, not an active merge source |
 | CPP-120 | Hardware startup diagnostics | Done | HWP boots with bus startup enabled, and startup ordering avoids null data-model access | `start_bus_on_setup` remains available as a diagnostic config knob |
 | CPP-130 | XPS helper publication and passive TX guard | Done | Existing helpers publish by default while every reboot starts read-only and pending frames are discarded when active mode is disabled | Adds standalone T02 and diagnostic COND_2 auxiliary sensors; active writes remain supervised-only |
-| CPP-140 | XPS-100 R11 maximum control | Done | An explicit XPS-only Number mutates only CONFIG_3 R11 within 35.0-40.0 C and reports received state | Number is absent by default, requires PC1001 detection, uses the latest CONFIG_3 template, and remains behind Active Mode |
+| CPP-140 | XPS-100 R11 maximum control | Done | An explicit XPS-only Number mutates only CONFIG_3 R11 within 35.0-45.0 C and reports received state | Number is absent by default, requires PC1001 detection, uses the latest CONFIG_3 template, and remains behind Active Mode; physical R11=42 C was passively confirmed |
 
 ## Protocol And Safety
 

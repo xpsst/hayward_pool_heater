@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "XPS-100 / PC1001 passive bus observations supplied during hardware analysis",
-  "provenance": "The target frames come from the complete 30, 34, and 35 C observations in ANALYSIS.md and the live 15 C ESPHome 2026.7.4 hardware log on 2026-08-14. The D1 frame was captured from the passive ESPHome 2026.7.4 hardware log on 2026-08-14. Reconstructed target checksums use the repository's short-frame rule. These are RX-only regression fixtures and do not authorize transmission.",
+  "provenance": "The target frames come from the complete 30, 34, and 35 C observations in ANALYSIS.md and the live 15 C ESPHome 2026.7.4 hardware log on 2026-08-14. The D1 frame was captured from the passive ESPHome 2026.7.4 hardware log on 2026-08-14. The R11 frame was passively captured after changing R11 from the physical PC1001 on 2026-08-15. Reconstructed target checksums use the repository's short-frame rule. These are RX-only regression fixtures and do not authorize transmission.",
   "packets": [
     {
       "id": "xps100-pc1001-target-15-variable-prefix",
@@ -62,6 +62,18 @@
       "checksum_valid": true,
       "expected_checksum": "0xFB",
       "notes": "After the XPS short-D2 signature is detected, full packet byte 9 uses extended temperature encoding: 0x83 decodes to the inlet candidate 35.5 C. Physical display comparison is still required."
+    },
+    {
+      "id": "xps100-pc1001-r11-42",
+      "source_id": "ESPHome passive hardware log 2026-08-15 08:36:38",
+      "label": "PC1001 R11 maximum heating setpoint 42 C",
+      "source": "heater",
+      "length": 12,
+      "frame_type": "0x83",
+      "bytes": ["0x83", "0xB1", "0x46", "0x23", "0x0A", "0x23", "0x23", "0x4C", "0x82", "0x5A", "0x90", "0xA5"],
+      "checksum_valid": true,
+      "expected_checksum": "0xA5",
+      "notes": "Physical PC1001 factory-menu change; the ESP remained passive. CONFIG_3 byte 10 uses extended temperature encoding and repeatedly decoded to 42 C. This proves storage and RX decoding, not ESP active transmission."
     }
   ]
 }

@@ -103,8 +103,9 @@ Confirm that the read-only R11 sensor and Number both become 40.0 C.
 In the same session, set the Number back to 35.0 C, wait for the confirmed
 heater echo and both entities to return to 35.0 C, then switch **Active Mode**
 off. Stop immediately on an echo mismatch, any changed neighbor byte, repeated
-commands, or surprising heater/controller behavior. Do not test 45 C; firmware
-and schema reject every value above 40 C.
+commands, or surprising heater/controller behavior. The firmware permits up to
+45 C after the physical PC1001 accepted and repeatedly echoed R11=42 C, but the
+first ESP-originated validation must still use the 40 C rollback procedure.
 
 Stop criteria:
 
@@ -118,6 +119,7 @@ Stop criteria:
 - ESP-IDF 5 RMT passive RX is field-stable on the hardware-test branch after moving RMT callback work out of ISR context. The component boots with bus startup enabled, decodes live heater frames, and continues publishing climate state.
 - XPS-100/PC1001 passive RX is hardware-confirmed for the physical target and inlet/current water temperature. Target changes down to 20 C appear in Home Assistant after the next received update.
 - Live target-15 evidence confirms that the first short-D2 payload byte varies independently; PC1001 detection uses the invariant `2D 07 0D A0` suffix and reads the heating target from the second payload byte.
+- With the ESP still passive, the physical PC1001 accepted R11=42 C and repeatedly emitted `83 B1 46 23 0A 23 23 4C 82 5A 90 A5`; Home Assistant reported the 42 C limit and a physical 41 C target. This validates storage and RX decoding, not ESP-originated R11 transmission.
 - XPS-100 R11 command generation is byte-tested and simulator-compatible, but the first supervised 35-to-40-to-35 C heater echo test is still pending.
 - CONFIG_5 defrost eco mode has passed a supervised active TX smoke test in both directions. The heater echoed `d06 defrost: ECO` after the ECO command and later echoed `d06 defrost: NORMAL` after the NORMAL command.
 - TX/RX recovery remained stable after those writes. The duplicate RX re-arm warning `Failed to arm RMT RX: 259` was resolved by avoiding a second receive arm after transmit.

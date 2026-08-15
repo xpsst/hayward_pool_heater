@@ -94,6 +94,10 @@ climate:
   form with a variable first payload byte while retaining the invariant
   `2D 07 0D A0` signature. This fixes the false R11 safety-gate rejection seen
   with `D2 [14 0F 2D 07 0D A0 EC]`.
+- Revision `2026.05.15.15-xps100-r11-45c` raises the opt-in XPS R11 Number and
+  climate visual ceiling to 45 C. The physical PC1001 accepted R11=42 C while
+  the ESP remained passive and repeatedly echoed `CONFIG_3` raw `0x90`; active
+  ESP-originated R11 validation is still pending and must begin at 40 C.
 - Active control remains opt-in. **Active Mode** always starts off, passive
   climate calls are rejected before frame generation, disabling active mode
   clears pending TX frames, and each config control waits only for its own

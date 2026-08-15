@@ -95,9 +95,11 @@ controller command packet, simulator command example, or live heater echo.
 
 The optional `input.xps100_r11_max_heating_setpoint` Number controls R11 only
 after the PC1001 short-D2 signature has been received. It accepts 35.0 to
-40.0 C in 0.5 C steps, copies the latest complete CONFIG_3 frame, changes only
+45.0 C in 0.5 C steps, copies the latest complete CONFIG_3 frame, changes only
 byte 10, and recalculates the checksum. It is not created by default, does not
-write at boot, and remains blocked while **Active Mode** is off.
+write at boot, and remains blocked while **Active Mode** is off. A physical
+PC1001 change to 42.0 C was passively observed as `CONFIG_3` raw `0x90`; this
+does not count as validation of an ESP-originated write.
 
 ## Workflow
 

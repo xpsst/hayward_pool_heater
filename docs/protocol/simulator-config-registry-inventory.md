@@ -19,7 +19,7 @@ to flash/NVS.
 |--------|---------------------------------------------|
 | `CONFIG_1` / `0x81` | Climate power/mode bits, H02 mode restrictions, R01 cooling setpoint, R02 heating setpoint, R03 auto setpoint, R04 cooling return differential, R05 cooling shutdown differential, R06 heating return differential, R07 heating shutdown differential, F12 minimum fan voltage percent |
 | `CONFIG_2` / `0x82` | F01 fan mode, F10 fan speed-control temperature source, D01 defrost start temperature, D02 defrost end temperature, D03 defrost cycle time, D04 maximum defrost time, F13 maximum fan voltage percent |
-| `CONFIG_3` / `0x83` | Opt-in XPS-100 R11 maximum heating setpoint limit, hard-limited to 35.0-40.0 C after PC1001 detection |
+| `CONFIG_3` / `0x83` | Opt-in XPS-100 R11 maximum heating setpoint limit, hard-limited to 35.0-45.0 C after PC1001 detection |
 | `CONFIG_4` / `0x84` | F02 high-speed cooling setpoint, F03 low-speed cooling setpoint, F04 cooling stop setpoint, F05 high-speed heating setpoint, F06 low-speed heating setpoint, F07 heating stop setpoint, F08 low-speed run time, F09 low-speed stop time |
 | `CONFIG_5` / `0x85` | U01 flow meter enable, D05 minimum economy defrost time, D06 defrost economy mode, F11 speed-control module, U02 pulses per liter |
 

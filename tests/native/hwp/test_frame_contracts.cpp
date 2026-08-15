@@ -519,6 +519,8 @@ void test_xps100_conf3_r11_control_contract() {
         0x83, 0xB1, 0x46, 0x23, 0x0A, 0x23, 0x23, 0x4C, 0x82, 0x5A, 0x82, 0x97};
     const Packet expected_40 = {
         0x83, 0xB1, 0x46, 0x23, 0x0A, 0x23, 0x23, 0x4C, 0x82, 0x5A, 0x8C, 0xA1};
+    const Packet expected_45 = {
+        0x83, 0xB1, 0x46, 0x23, 0x0A, 0x23, 0x23, 0x4C, 0x82, 0x5A, 0x96, 0xAB};
 
     auto frame = stage_frame<hwp::FrameConf3>(current, hwp::SOURCE_HEATER);
     hwp::heat_pump_data_t hp_data;
@@ -547,15 +549,33 @@ void test_xps100_conf3_r11_control_contract() {
     frame.parse(hp_data);
     assert_float_eq(hp_data.r11_max_heating_setpoint.value(), 40.0f);
 
-    call.xps100_r11_max_heating_setpoint = 40.5f;
+    call.xps100_r11_max_heating_setpoint = 45.0f;
+    result = frame.control(call);
+    assert(result.has_value());
+    const auto command_45 = result.value();
+    assert(command_45->packet.data_len == expected_45.size());
+    assert(command_45->packet.is_checksum_valid());
+    for (size_t i = 0; i < expected_45.size(); ++i) {
+        assert(command_45->packet.data[i] == expected_45[i]);
+        if (i != 10 && i != 11) {
+            assert(command_45->packet.data[i] == expected_40[i]);
+        }
+    }
+
+    auto echo_45 = make_frame(expected_45, hwp::SOURCE_HEATER);
+    frame.stage(echo_45);
+    frame.parse(hp_data);
+    assert_float_eq(hp_data.r11_max_heating_setpoint.value(), 45.0f);
+
+    call.xps100_r11_max_heating_setpoint = 45.5f;
     assert(!frame.control(call).has_value());
     call.xps100_r11_max_heating_setpoint = 34.5f;
     assert(!frame.control(call).has_value());
-    call.xps100_r11_max_heating_setpoint = 39.2f;
+    call.xps100_r11_max_heating_setpoint = 44.2f;
     assert(!frame.control(call).has_value());
 
     hp_data.xps100_pc1001_detected = false;
-    call.xps100_r11_max_heating_setpoint = 39.5f;
+    call.xps100_r11_max_heating_setpoint = 44.5f;
     assert(!frame.control(call).has_value());
 
     hwp::FrameConf3 empty_frame;

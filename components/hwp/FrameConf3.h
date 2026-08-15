@@ -102,7 +102,9 @@ class FrameConf3 : public BaseFrame {
     CLASS_DEFAULT_IMPL(FrameConf3, conf_3_t);
     static constexpr uint8_t FRAME_ID_CONF_3 = 0x83;
     static constexpr float XPS100_R11_MIN_C = 35.0f;
-    static constexpr float XPS100_R11_MAX_C = 40.0f;
+    // A physical XPS-100/PC1001 accepted and echoed R11=42 C. Keep the
+    // XPS-specific software ceiling conservative while allowing the requested 45 C.
+    static constexpr float XPS100_R11_MAX_C = 45.0f;
     static constexpr float XPS100_R11_STEP_C = 0.5f;
     void traits(climate::ClimateTraits& traits, heat_pump_data_t& hp_data) override;
 

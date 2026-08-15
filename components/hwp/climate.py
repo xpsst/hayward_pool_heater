@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 
 CODEOWNERS = ["@sle118"]
-COMPONENT_VERSION = "2026.05.15.14-xps100-config3-source"
+COMPONENT_VERSION = "2026.05.15.15-xps100-r11-45c"
 
 AUTO_LOAD = [
     "climate",
@@ -445,7 +445,7 @@ INPUTS = dict[str, tuple[cv.Schema, callable]](
                 "unit_of_measurement": UNIT_CELSIUS,
                 "device_class": DEVICE_CLASS_TEMPERATURE,
             },
-            {"min_value": 35, "max_value": 40, "step": 0.5},
+            {"min_value": 35, "max_value": 45, "step": 0.5},
         ),
         CONF_U02_PULSES_PER_LITER: (
             "Pulses Per Liter",
@@ -947,7 +947,7 @@ async def to_code(config):
         input_component = cg.new_Pvariable(input_conf[CONF_ID])
         if sensor_designator == CONF_XPS100_R11_MAX_HEATING_SETPOINT:
             cg.add_define("USE_CLIMATE_VISUAL_OVERRIDES")
-            cg.add(heater_component.set_visual_max_temperature_override(40.0))
+            cg.add(heater_component.set_visual_max_temperature_override(45.0))
         registration_function = INPUT_TYPES_TEMPLATE[schema_name]["registration_function"]
         await registration_function(input_component, input_conf, **register_options)
         await cg.register_parented(input_component, heater_component)
