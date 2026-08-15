@@ -100,8 +100,8 @@ void FrameConf3::parse(heat_pump_data_t& hp_data) {
 
     const float observed_r11 = data_->r11_max_heating_setpoint.decode();
     if (hp_data.xps100_pc1001_detected) {
-        ESP_LOGD(TAG, "XPS100 debug: CONFIG_3 R11 max heating %.1fC (raw 0x%02X)",
-            observed_r11, data_->r11_max_heating_setpoint.raw);
+        ESP_LOGD(TAG, "XPS100 debug: CONFIG_3 (%s) R11 max heating %.1fC (raw 0x%02X)",
+            this->source_string(), observed_r11, data_->r11_max_heating_setpoint.raw);
     }
     if (pending_xps100_r11_.has_value() && this->get_source() == SOURCE_HEATER) {
         if (std::fabs(observed_r11 - pending_xps100_r11_.value()) < 0.01f) {

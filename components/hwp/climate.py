@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 
 CODEOWNERS = ["@sle118"]
-COMPONENT_VERSION = "2026.05.15.13-xps100-d2-signature"
+COMPONENT_VERSION = "2026.05.15.14-xps100-config3-source"
 
 AUTO_LOAD = [
     "climate",
