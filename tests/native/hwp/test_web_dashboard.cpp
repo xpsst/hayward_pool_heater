@@ -146,6 +146,75 @@ void test_field_snapshot_retains_previous_fields_on_partial_update() {
     assert(dashboard.graph_point_count("t04_coil") == 1);
 }
 
+void test_loxone_state_snapshot() {
+    hwp::HWPWebDashboard dashboard;
+    dashboard.configure(hwp::HWPWebConfig{true, "/hwp", 4, 4, true});
+    hwp::heat_pump_data_t data;
+    data.xps100_pc1001_detected = true;
+    data.mode = esphome::climate::CLIMATE_MODE_HEAT;
+    data.action = esphome::climate::CLIMATE_ACTION_HEATING;
+    data.S02_water_flow = hwp::FlowMeterEnable::Enabled;
+    data.t02_temperature_inlet = 28.5f;
+    data.t03_temperature_outlet = 29.5f;
+    data.t04_temperature_coil = 8.0f;
+    data.t05_temperature_ambient = 18.5f;
+    data.target_temperature = 31.0f;
+    data.r11_max_heating_setpoint = 42.0f;
+    data.last_heater_frame = millis();
+
+    dashboard.update_loxone_state(data, "S00", true, false);
+    const auto json = dashboard.loxone_state_json();
+    assert_contains(json, "\"online\":1");
+    assert_contains(json, "\"control_enabled\":0");
+    assert_contains(json, "\"xps100_detected\":1");
+    assert_contains(json, "\"mode_code\":1");
+    assert_contains(json, "\"mode_name\":\"HEAT\"");
+    assert_contains(json, "\"action_code\":2");
+    assert_contains(json, "\"action_name\":\"HEATING\"");
+    assert_contains(json, "\"water_flow\":1");
+    assert_contains(json, "\"fault\":0");
+    assert_contains(json, "\"heater_status_code\":\"S00\"");
+    assert_contains(json, "\"current_temperature\":28.5");
+    assert_contains(json, "\"outlet_temperature\":29.5");
+    assert_contains(json, "\"ambient_temperature\":18.5");
+    assert_contains(json, "\"coil_temperature\":8");
+    assert_contains(json, "\"target_temperature\":31");
+    assert_contains(json, "\"max_heating_temperature\":42");
+}
+
+void test_loxone_control_parser_and_callback() {
+    hwp::HWPWebDashboard dashboard;
+    dashboard.configure(hwp::HWPWebConfig{true, "/hwp", 4, 4, true});
+    bool callback_called = false;
+    dashboard.set_loxone_control_callback(
+        [&callback_called](const hwp::HWPLoxoneControlRequest& request) {
+            callback_called = true;
+            assert(request.mode == esphome::climate::CLIMATE_MODE_HEAT);
+            assert(request.target_temperature.has_value());
+            assert(request.target_temperature.value() == 31.5f);
+            return hwp::HWPLoxoneControlResult{202, "{\"accepted\":true}"};
+        });
+
+    auto result = dashboard.handle_loxone_control(std::string("HEAT"), std::string("31.5"));
+    assert(callback_called);
+    assert(result.status_code == 202);
+    assert_contains(result.body, "\"accepted\":true");
+
+    result = dashboard.handle_loxone_control(std::string("boost"), esphome::nullopt);
+    assert(result.status_code == 400);
+    assert_contains(result.body, "invalid_mode");
+    result = dashboard.handle_loxone_control(esphome::nullopt, std::string("31C"));
+    assert(result.status_code == 400);
+    assert_contains(result.body, "invalid_target");
+    callback_called = false;
+    result = dashboard.handle_loxone_control(std::string("heat"), std::string("31,5"));
+    assert(callback_called);
+    assert(result.status_code == 202);
+    result = dashboard.handle_loxone_control(esphome::nullopt, esphome::nullopt);
+    assert(result.status_code == 400);
+    assert_contains(result.body, "missing_command");
+}
+
 void test_index_html_contains_annotation_helper() {
     const std::string html = hwp::HWPWebDashboard::index_html();
     assert_contains(html, "Values");
@@ -179,6 +248,8 @@ int main() {
     test_immediate_packet_repeats_are_collapsed();
     test_field_snapshot_and_graph_trim();
     test_field_snapshot_retains_previous_fields_on_partial_update();
+    test_loxone_state_snapshot();
+    test_loxone_control_parser_and_callback();
     test_index_html_contains_annotation_helper();
     return 0;
 }

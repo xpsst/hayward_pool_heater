@@ -24,8 +24,12 @@
 #include "hwp_version.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cctype>
 #include <cinttypes>
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <utility>
 
@@ -150,14 +154,20 @@ void append_bytes_json(std::string& out, const std::vector<uint8_t>& bytes) {
 #ifdef USE_WEBSERVER
 class HWPWebHandler : public AsyncWebHandler {
   public:
-    HWPWebHandler(HWPWebDashboard* dashboard, std::string path)
-        : dashboard_(dashboard), path_(std::move(path)) {}
+    HWPWebHandler(HWPWebDashboard* dashboard, std::string path, bool loxone_api_enabled)
+        : dashboard_(dashboard), path_(std::move(path)),
+          loxone_api_enabled_(loxone_api_enabled) {}
     bool canHandle(AsyncWebServerRequest* request) const override {
         if (request->method() != HTTP_GET) return false;
         char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
         auto url = request->url_to(url_buf);
-        return url == path_ || url == path_ + "/" || url == path_ + "/state.json" ||
-               url == path_ + "/graphs.json";
+        const bool dashboard_route = url == path_ || url == path_ + "/" ||
+                                     url == path_ + "/state.json" ||
+                                     url == path_ + "/graphs.json";
+        const bool loxone_route = loxone_api_enabled_ &&
+                                  (url == path_ + "/loxone/state" ||
+                                      url == path_ + "/loxone/control");
+        return dashboard_route || loxone_route;
     }
     void handleRequest(AsyncWebServerRequest* request) override {
         char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
@@ -172,12 +182,29 @@ class HWPWebHandler : public AsyncWebHandler {
             request->send(200, "application/json", payload.c_str());
             return;
         }
+        if (loxone_api_enabled_ && url == path_ + "/loxone/state") {
+            auto payload = dashboard_->loxone_state_json();
+            request->send(200, "application/json", payload.c_str());
+            return;
+        }
+        if (loxone_api_enabled_ && url == path_ + "/loxone/control") {
+            optional<std::string> mode;
+            optional<std::string> target_temperature;
+            if (auto* parameter = request->getParam("mode")) mode = parameter->value();
+            if (auto* parameter = request->getParam("target")) {
+                target_temperature = parameter->value();
+            }
+            const auto result = dashboard_->handle_loxone_control(mode, target_temperature);
+            request->send(result.status_code, "application/json", result.body.c_str());
+            return;
+        }
         request->send(200, "text/html", HWPWebDashboard::index_html());
     }
 
   private:
     HWPWebDashboard* dashboard_;
     std::string path_;
+    bool loxone_api_enabled_{false};
 };
 
 void HWPWebDashboard::setup(web_server::WebServer* web_server) {
@@ -185,7 +212,8 @@ void HWPWebDashboard::setup(web_server::WebServer* web_server) {
     auto* base = web_server_base::global_web_server_base;
     if (base == nullptr || web_server == nullptr) return;
     this->web_server_ = web_server;
-    base->add_handler(new HWPWebHandler(this, this->config_.path));
+    base->add_handler(
+        new HWPWebHandler(this, this->config_.path, this->config_.loxone_api_enabled));
     this->handlers_registered_ = true;
 }
 
@@ -200,7 +228,7 @@ void HWPWebDashboard::loop() {
     }
     if (this->events_ != nullptr && should_send) {
         auto payload = this->event_json();
-        this->events_->try_send_nodefer(payload.c_str(), "state");
+        this->events_->try_send_nodefer(payload.c_str(), payload.size(), "state");
         {
             std::lock_guard<std::mutex> lock(this->data_mutex_);
             this->dirty_ = false;
@@ -338,6 +366,16 @@ void HWPWebDashboard::update_fields(
     this->dirty_ = true;
 }
 
+void HWPWebDashboard::update_loxone_state(const heat_pump_data_t& data,
+    const std::string& heater_status_code, bool passive_mode, bool heater_offline) {
+    if (!this->config_.enabled || !this->config_.loxone_api_enabled) return;
+    std::lock_guard<std::mutex> lock(this->data_mutex_);
+    this->loxone_data_ = data;
+    this->loxone_heater_status_code_ = heater_status_code;
+    this->loxone_passive_mode_ = passive_mode;
+    this->loxone_heater_offline_ = heater_offline;
+}
+
 void HWPWebDashboard::append_field(std::vector<HWPWebField>& fields, HWPWebField field) {
     if (field.id.empty()) return;
     auto previous = this->previous_field_values_.find(field.id);
@@ -377,6 +415,139 @@ std::string HWPWebDashboard::graph_state_json() const {
     append_graph_json(out, graphs);
     out << "}";
     return out.str();
+}
+
+std::string HWPWebDashboard::loxone_state_json() const {
+    heat_pump_data_t data;
+    std::string heater_status_code;
+    bool passive_mode;
+    bool heater_offline;
+    {
+        std::lock_guard<std::mutex> lock(this->data_mutex_);
+        data = this->loxone_data_;
+        heater_status_code = this->loxone_heater_status_code_;
+        passive_mode = this->loxone_passive_mode_;
+        heater_offline = this->loxone_heater_offline_;
+    }
+
+    optional<uint32_t> heater_frame_age;
+    if (data.last_heater_frame.has_value()) {
+        heater_frame_age = millis() - data.last_heater_frame.value();
+    }
+    const bool online = !heater_offline && heater_frame_age.has_value() &&
+                        heater_frame_age.value() <= 30000;
+
+    std::string out;
+    out.reserve(512);
+    out += "{\"revision\":\"";
+    out += escape_json(HWP_COMPONENT_VERSION);
+    out += "\",\"online\":";
+    out += online ? "1" : "0";
+    out += ",\"control_enabled\":";
+    out += passive_mode ? "0" : "1";
+    out += ",\"xps100_detected\":";
+    out += data.xps100_pc1001_detected ? "1" : "0";
+    out += ",\"mode_code\":";
+    out += std::to_string(loxone_mode_code(data.mode));
+    out += ",\"mode_name\":\"";
+    out += loxone_mode_name(data.mode);
+    out += "\",\"action_code\":";
+    out += std::to_string(loxone_action_code(data.action));
+    out += ",\"action_name\":\"";
+    out += loxone_action_name(data.action);
+    out += "\",\"water_flow\":";
+    out += data.S02_water_flow.has_value()
+               ? (static_cast<bool>(data.S02_water_flow.value()) ? "1" : "0")
+               : "-1";
+    out += ",\"fault\":";
+    out += heater_status_code == "S00" ? "0" : "1";
+    out += ",\"heater_status_code\":\"";
+    out += escape_json(heater_status_code);
+    out += "\",\"current_temperature\":";
+    if (data.t02_temperature_inlet.has_value()) {
+        append_float(out, data.t02_temperature_inlet.value());
+    } else {
+        out += "null";
+    }
+    out += ",\"outlet_temperature\":";
+    if (data.t03_temperature_outlet.has_value()) {
+        append_float(out, data.t03_temperature_outlet.value());
+    } else {
+        out += "null";
+    }
+    out += ",\"ambient_temperature\":";
+    if (data.t05_temperature_ambient.has_value()) {
+        append_float(out, data.t05_temperature_ambient.value());
+    } else {
+        out += "null";
+    }
+    out += ",\"coil_temperature\":";
+    if (data.t04_temperature_coil.has_value()) {
+        append_float(out, data.t04_temperature_coil.value());
+    } else {
+        out += "null";
+    }
+    out += ",\"target_temperature\":";
+    if (data.target_temperature.has_value()) {
+        append_float(out, data.target_temperature.value());
+    } else {
+        out += "null";
+    }
+    out += ",\"max_heating_temperature\":";
+    if (data.r11_max_heating_setpoint.has_value()) {
+        append_float(out, data.r11_max_heating_setpoint.value());
+    } else {
+        out += "null";
+    }
+    out += ",\"last_heater_frame_age_ms\":";
+    if (heater_frame_age.has_value()) {
+        append_uint(out, heater_frame_age.value());
+    } else {
+        out += "null";
+    }
+    out += "}";
+    return out;
+}
+
+HWPLoxoneControlResult HWPWebDashboard::handle_loxone_control(
+    const optional<std::string>& mode, const optional<std::string>& target_temperature) const {
+    HWPLoxoneControlRequest request;
+    if (mode.has_value()) {
+        std::string normalized = mode.value();
+        std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+            [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+        if (normalized == "0" || normalized == "off") {
+            request.mode = climate::CLIMATE_MODE_OFF;
+        } else if (normalized == "1" || normalized == "heat") {
+            request.mode = climate::CLIMATE_MODE_HEAT;
+        } else if (normalized == "2" || normalized == "cool") {
+            request.mode = climate::CLIMATE_MODE_COOL;
+        } else if (normalized == "3" || normalized == "auto") {
+            request.mode = climate::CLIMATE_MODE_AUTO;
+        } else {
+            return {400, "{\"accepted\":false,\"error\":\"invalid_mode\"}"};
+        }
+    }
+    if (target_temperature.has_value()) {
+        auto value = target_temperature.value();
+        if (value.find('.') == std::string::npos) {
+            std::replace(value.begin(), value.end(), ',', '.');
+        }
+        char* end = nullptr;
+        errno = 0;
+        const float parsed = std::strtof(value.c_str(), &end);
+        if (errno != 0 || end == value.c_str() || *end != '\0' || !std::isfinite(parsed)) {
+            return {400, "{\"accepted\":false,\"error\":\"invalid_target\"}"};
+        }
+        request.target_temperature = parsed;
+    }
+    if (!request.mode.has_value() && !request.target_temperature.has_value()) {
+        return {400, "{\"accepted\":false,\"error\":\"missing_command\"}"};
+    }
+    if (!this->loxone_control_callback_) {
+        return {503, "{\"accepted\":false,\"error\":\"control_unavailable\"}"};
+    }
+    return this->loxone_control_callback_(request);
 }
 
 std::string HWPWebDashboard::event_json() const {
@@ -686,6 +857,56 @@ std::string HWPWebDashboard::bus_mode_to_string(bus_mode_t mode) {
     case BUSMODE_ERROR: return "ERROR";
     }
     return "UNKNOWN";
+}
+
+int HWPWebDashboard::loxone_mode_code(optional<climate::ClimateMode> mode) {
+    if (!mode.has_value()) return -1;
+    switch (mode.value()) {
+    case climate::CLIMATE_MODE_OFF: return 0;
+    case climate::CLIMATE_MODE_HEAT: return 1;
+    case climate::CLIMATE_MODE_COOL: return 2;
+    case climate::CLIMATE_MODE_AUTO: return 3;
+    default: return -1;
+    }
+}
+
+const char* HWPWebDashboard::loxone_mode_name(optional<climate::ClimateMode> mode) {
+    if (!mode.has_value()) return "UNKNOWN";
+    switch (mode.value()) {
+    case climate::CLIMATE_MODE_OFF: return "OFF";
+    case climate::CLIMATE_MODE_HEAT: return "HEAT";
+    case climate::CLIMATE_MODE_COOL: return "COOL";
+    case climate::CLIMATE_MODE_AUTO: return "AUTO";
+    default: return "UNKNOWN";
+    }
+}
+
+int HWPWebDashboard::loxone_action_code(optional<climate::ClimateAction> action) {
+    if (!action.has_value()) return -1;
+    switch (action.value()) {
+    case climate::CLIMATE_ACTION_OFF: return 0;
+    case climate::CLIMATE_ACTION_IDLE: return 1;
+    case climate::CLIMATE_ACTION_HEATING: return 2;
+    case climate::CLIMATE_ACTION_COOLING: return 3;
+    case climate::CLIMATE_ACTION_DEFROSTING: return 4;
+    case climate::CLIMATE_ACTION_FAN: return 5;
+    case climate::CLIMATE_ACTION_DRYING: return 6;
+    default: return -1;
+    }
+}
+
+const char* HWPWebDashboard::loxone_action_name(optional<climate::ClimateAction> action) {
+    if (!action.has_value()) return "UNKNOWN";
+    switch (action.value()) {
+    case climate::CLIMATE_ACTION_OFF: return "OFF";
+    case climate::CLIMATE_ACTION_IDLE: return "IDLE";
+    case climate::CLIMATE_ACTION_HEATING: return "HEATING";
+    case climate::CLIMATE_ACTION_COOLING: return "COOLING";
+    case climate::CLIMATE_ACTION_DEFROSTING: return "DEFROSTING";
+    case climate::CLIMATE_ACTION_FAN: return "FAN";
+    case climate::CLIMATE_ACTION_DRYING: return "DRYING";
+    default: return "UNKNOWN";
+    }
 }
 
 std::string HWPWebDashboard::frame_source_to_string(frame_source_t source) {

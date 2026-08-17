@@ -26,10 +26,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifndef HWP_NATIVE_TEST
@@ -53,6 +55,17 @@ struct HWPWebConfig {
     std::string path{"/hwp"};
     size_t packet_buffer_size{HWP_WEB_DEFAULT_PACKET_BUFFER_SIZE};
     size_t graph_history_size{HWP_WEB_DEFAULT_GRAPH_HISTORY_SIZE};
+    bool loxone_api_enabled{false};
+};
+
+struct HWPLoxoneControlRequest {
+    optional<climate::ClimateMode> mode;
+    optional<float> target_temperature;
+};
+
+struct HWPLoxoneControlResult {
+    int status_code{500};
+    std::string body{"{\"accepted\":false,\"error\":\"internal_error\"}"};
 };
 
 struct HWPWebField {
@@ -89,15 +102,24 @@ class HWPWebDashboard {
 
     void record_packet(const BaseFrame& frame, const std::string& kind);
     void update_fields(const heat_pump_data_t& data, const std::string& status, bus_mode_t bus_mode);
+    void update_loxone_state(const heat_pump_data_t& data,
+        const std::string& heater_status_code, bool passive_mode, bool heater_offline);
 
     std::string state_json() const;
     std::string graph_state_json() const;
+    std::string loxone_state_json() const;
     std::string event_json() const;
     size_t packet_count() const;
     size_t latest_frame_count() const;
     size_t graph_point_count(const std::string& field_id) const;
     static const char* index_html();
     static std::string escape_json(const std::string& value);
+    void set_loxone_control_callback(
+        std::function<HWPLoxoneControlResult(const HWPLoxoneControlRequest&)> callback) {
+        this->loxone_control_callback_ = std::move(callback);
+    }
+    HWPLoxoneControlResult handle_loxone_control(
+        const optional<std::string>& mode, const optional<std::string>& target_temperature) const;
 
   private:
     struct PacketRecord {
@@ -135,6 +157,12 @@ class HWPWebDashboard {
     std::string last_status_{};
     bus_mode_t last_bus_mode_{BUSMODE_RX};
     bool dirty_{false};
+    heat_pump_data_t loxone_data_{};
+    std::string loxone_heater_status_code_{"S99"};
+    bool loxone_passive_mode_{true};
+    bool loxone_heater_offline_{true};
+    std::function<HWPLoxoneControlResult(const HWPLoxoneControlRequest&)>
+        loxone_control_callback_{};
 
 #ifndef HWP_NATIVE_TEST
 #ifdef USE_WEBSERVER
@@ -166,6 +194,10 @@ class HWPWebDashboard {
     static std::string frame_source_to_string(frame_source_t source);
     static std::string bytes_to_key(const BaseFrame& frame);
     static std::string bytes_to_json(const std::vector<uint8_t>& bytes);
+    static int loxone_mode_code(optional<climate::ClimateMode> mode);
+    static const char* loxone_mode_name(optional<climate::ClimateMode> mode);
+    static int loxone_action_code(optional<climate::ClimateAction> action);
+    static const char* loxone_action_name(optional<climate::ClimateAction> action);
     static std::string bool_json(bool value) { return value ? "true" : "false"; }
     static HWPWebField make_float_field(const char* id, const char* label, optional<float> value,
         const char* unit, const char* group, const char* frame, const char* raw_location,

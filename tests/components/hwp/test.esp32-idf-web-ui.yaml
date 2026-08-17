@@ -21,6 +21,7 @@ esp32:
 
 web_server:
   auth:
+    type: basic
     username: test
     password: test
 
@@ -34,3 +35,4 @@ climate:
       path: /hwp
       packet_buffer_size: 16
       graph_history_size: 32
+      loxone_api: true

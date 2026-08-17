@@ -287,6 +287,11 @@ class PoolHeater : public climate::Climate, public PollingComponent {
         config.graph_history_size = size;
         this->web_dashboard_.configure(config);
     }
+    void set_loxone_api_enabled(bool enabled) {
+        auto config = this->web_dashboard_.config();
+        config.loxone_api_enabled = enabled;
+        this->web_dashboard_.configure(config);
+    }
 #ifndef HWP_NATIVE_TEST
 #ifdef USE_WEBSERVER
     void set_web_server(web_server::WebServer* web_server) { this->web_server_ = web_server; }

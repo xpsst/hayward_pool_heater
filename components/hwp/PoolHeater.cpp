@@ -61,6 +61,44 @@ void PoolHeater::setup() {
     restore_state_();
     this->driver_.set_data_model(hp_data_);
     this->driver_.set_web_dashboard(&this->web_dashboard_);
+    this->web_dashboard_.set_loxone_control_callback(
+        [this](const HWPLoxoneControlRequest& request) -> HWPLoxoneControlResult {
+            if (this->passive_mode_) {
+                return {409,
+                    "{\"accepted\":false,\"error\":\"passive_mode\"}"};
+            }
+            if (this->is_heater_offline()) {
+                return {503,
+                    "{\"accepted\":false,\"error\":\"heater_offline\"}"};
+            }
+            if (request.target_temperature.has_value()) {
+                const float target = request.target_temperature.value();
+                const bool half_degree =
+                    std::fabs(target * 2.0f - std::round(target * 2.0f)) < 0.01f;
+                if (!half_degree || !this->hp_data_.is_temperature_valid(target)) {
+                    return {422,
+                        "{\"accepted\":false,\"error\":\"target_out_of_range\"}"};
+                }
+            }
+
+            this->defer([this, request]() {
+                auto call = this->make_call();
+                if (request.mode.has_value()) call.set_mode(request.mode.value());
+                if (request.target_temperature.has_value()) {
+                    call.set_target_temperature(request.target_temperature.value());
+                }
+                if (request.mode.has_value()) {
+                    ESP_LOGI(POOL_HEATER_TAG, "Loxone control accepted: mode=%s",
+                        LOG_STR_ARG(climate_mode_to_string(request.mode.value())));
+                }
+                if (request.target_temperature.has_value()) {
+                    ESP_LOGI(POOL_HEATER_TAG, "Loxone control accepted: target=%.1fC",
+                        request.target_temperature.value());
+                }
+                call.perform();
+            });
+            return {202, "{\"accepted\":true}"};
+        });
 #ifndef HWP_NATIVE_TEST
 #ifdef USE_WEBSERVER
     this->web_dashboard_.setup(this->web_server_);
@@ -282,6 +320,8 @@ void PoolHeater::update() {
     ESP_LOGD(POOL_HEATER_TAG, "Publishing climate state");
     this->web_dashboard_.update_fields(
         this->hp_data_, this->actual_status_, this->driver_.get_bus_mode());
+    this->web_dashboard_.update_loxone_state(this->hp_data_,
+        this->heater_status_.get_code(), this->passive_mode_, this->is_heater_offline());
     save_preferences_();
     climate::Climate::publish_state();
 }

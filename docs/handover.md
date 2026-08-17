@@ -98,6 +98,11 @@ climate:
   climate visual ceiling to 45 C. The physical PC1001 accepted R11=42 C while
   the ESP remained passive and repeatedly echoed `CONFIG_3` raw `0x90`; active
   ESP-originated R11 validation is still pending and must begin at 40 C.
+- Revision `2026.05.15.16-xps100-loxone` adds an opt-in authenticated Loxone
+  bridge at `/hwp/loxone/state` and `/hwp/loxone/control`. It exposes stable
+  numeric state/mode/action fields and accepts OFF/HEAT/COOL/AUTO or target
+  requests only while Active Mode is already enabled. Network requests defer
+  climate calls to the ESPHome main loop. See `docs/loxone-integration.md`.
 - Active control remains opt-in. **Active Mode** always starts off, passive
   climate calls are rejected before frame generation, disabling active mode
   clears pending TX frames, and each config control waits only for its own

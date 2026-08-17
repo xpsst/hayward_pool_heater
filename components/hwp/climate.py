@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 
 CODEOWNERS = ["@sle118"]
-COMPONENT_VERSION = "2026.05.15.15-xps100-r11-45c"
+COMPONENT_VERSION = "2026.05.15.16-xps100-loxone"
 
 AUTO_LOAD = [
     "climate",
@@ -100,6 +100,7 @@ CONF_OPTIMIZED = "optimized"
 CONF_GENERATE_CODE_BUTTON = "generate_code"
 CONF_START_BUS_ON_SETUP = "start_bus_on_setup"
 CONF_WEB_UI = "web_ui"
+CONF_LOXONE_API = "loxone_api"
 CONF_ENABLED = "enabled"
 CONF_PATH = "path"
 CONF_PACKET_BUFFER_SIZE = "packet_buffer_size"
@@ -282,6 +283,7 @@ BASE_SCHEMA = climate.climate_schema(PoolHeater).extend(
                 cv.Optional(CONF_GRAPH_HISTORY_SIZE, default=240): cv.All(
                     cv.int_, cv.Range(min=1, max=480)
                 ),
+                cv.Optional(CONF_LOXONE_API, default=False): cv.boolean,
             }
         ),
         cv.Optional(CONF_UPDATE_INTERVAL, default="30s"): cv.All(
@@ -301,6 +303,8 @@ def validate_web_ui(config):
         web_ui[CONF_ENABLED] = has_web_server
     elif enabled and not has_web_server and getattr(core.CORE, "testing_mode", False):
         raise cv.Invalid("web_ui.enabled requires an ESPHome web_server: component")
+    if web_ui.get(CONF_LOXONE_API, False) and not web_ui.get(CONF_ENABLED, False):
+        raise cv.Invalid("web_ui.loxone_api requires web_ui.enabled")
     config[CONF_WEB_UI] = web_ui
     return config
 
@@ -314,6 +318,8 @@ def final_validate_web_ui(config):
         web_ui[CONF_ENABLED] = has_web_server
     elif enabled and not has_web_server:
         raise cv.Invalid("web_ui.enabled requires an ESPHome web_server: component")
+    if web_ui.get(CONF_LOXONE_API, False) and not web_ui.get(CONF_ENABLED, False):
+        raise cv.Invalid("web_ui.loxone_api requires web_ui.enabled")
     config[CONF_WEB_UI] = web_ui
     return config
 
@@ -914,6 +920,7 @@ async def to_code(config):
             web_ui[CONF_GRAPH_HISTORY_SIZE]
         )
     )
+    cg.add(heater_component.set_loxone_api_enabled(web_ui[CONF_LOXONE_API]))
     if web_ui_enabled:
         web_server_component = await cg.get_variable(
             core.CORE.config[CONF_WEB_SERVER][CONF_ID]

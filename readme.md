@@ -132,6 +132,7 @@ For field troubleshooting around the pool, enable ESPHome's web server and the H
 ```yaml
 web_server:
   auth:
+    type: basic
     username: !secret web_user
     password: !secret web_password
 
@@ -143,6 +144,7 @@ climate:
     web_ui:
       enabled: true
       path: /hwp
+      loxone_api: false
 ```
 
 After flashing, open `http://<device-address>/hwp`. The page has **Values**, **Packets**, and **Graphs** tabs. It uses `/hwp/state.json` for initial load and `/hwp/events` for live updates, and it follows the ESPHome web server authentication settings when auth is configured.
@@ -155,6 +157,7 @@ After flashing, open `http://<device-address>/hwp`. The page has **Values**, **P
 | `path` | `/hwp` | Dashboard base path. |
 | `packet_buffer_size` | `80` | Number of recent packets kept in memory for the Packets tab. |
 | `graph_history_size` | `240` | Number of numeric samples kept per graphed field. |
+| `loxone_api` | `false` | Adds authenticated Loxone status/control routes. Control still requires the separate **Active Mode** switch. See [docs/loxone-integration.md](docs/loxone-integration.md). |
 
 During hardware testing from a branch, make ESPHome refresh the external component source so it does not silently reuse a cached copy:
 
